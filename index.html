@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COPA LINCE - Plataforma de Competencias LINCECODE</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pitchDark: '#0b0406',
+                        cardDark: '#16080b',
+                        cardHover: '#200c10',
+                        cardBorder: '#2d0e14',
+                        burgundy: '#580a14',
+                        secondaryRed: '#800f1d',
+                        accentRed: '#e60026',
+                        brightRed: '#ff1a3c',
+                        gold: '#e9c46a',
+                        silver: '#c0c0c0',
+                        bronze: '#cd7f32',
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        header: ['Chakra Petch', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0406;
+            color: #f8f9fa;
+            font-family: 'Montserrat', sans-serif;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(230, 0, 38, 0.18) 0%, transparent 65%),
+                radial-gradient(circle at 50% 100%, rgba(88, 10, 20, 0.25) 0%, transparent 70%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .tactical-grid {
+            background-image: 
+                linear-gradient(rgba(230, 0, 38, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230, 0, 38, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .lince-ring {
+            box-shadow: 0 0 35px rgba(230, 0, 38, 0.55), inset 0 0 20px rgba(233, 196, 106, 0.35);
+            border: 2px solid #e60026;
+        }
+
+        .nav-tab.active {
+            background-color: #e60026;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(230, 0, 38, 0.5);
+            border-color: #ff1a3c;
+        }
+
+        .disc-tab.active {
+            border-color: #ff1a3c;
+            background-color: #580a14;
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(230, 0, 38, 0.4);
+        }
+
+        .tournament-logo-frame {
+            width: 3.5rem;
+            height: 3.5rem;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            border: 1px solid rgba(233, 196, 106, 0.35);
+            border-radius: 0.85rem;
+            background: #fff;
+        }
+
+        .tournament-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 0.2rem;
+            animation-duration: 2.8s;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+            will-change: transform;
+        }
+
+        .tournament-logo-fifa { animation-name: fifa-float; }
+        .tournament-logo-smash { animation-name: smash-pulse; }
+        .tournament-logo-dance { animation-name: dance-bounce; }
+        .tournament-logo-karaoke { animation-name: karaoke-sway; }
+
+        @keyframes fifa-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes smash-pulse {
+            0%, 100% { transform: scale(0.94) rotate(-3deg); }
+            50% { transform: scale(1.04) rotate(3deg); }
+        }
+
+        @keyframes dance-bounce {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-5px) rotate(4deg); }
+        }
+
+        @keyframes karaoke-sway {
+            0%, 100% { transform: rotate(-6deg) scale(0.96); }
+            50% { transform: rotate(6deg) scale(1.04); }
+        }
+
+        .disc-tab-logo-frame {
+            width: 1.65rem;
+            height: 1.65rem;
+            border-radius: 0.4rem;
+        }
+
+        .disc-tab .tournament-logo { padding: 0.1rem; }
+
+        .bracket-scroll {
+            scrollbar-color: #800f1d #0b0406;
+            scrollbar-width: thin;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .tournament-logo { animation: none; }
+        }
+
+        /* Rank Highlight Styles */
+        .rank-gold {
+            background: linear-gradient(90deg, rgba(233, 196, 106, 0.18) 0%, rgba(22, 8, 11, 0.9) 100%) !important;
+            border-left: 4px solid #e9c46a !important;
+        }
+        .rank-silver {
+            background: linear-gradient(90deg, rgba(192, 192, 192, 0.12) 0%, rgba(22, 8, 11, 0.9) 100%) !important;
+            border-left: 4px solid #c0c0c0 !important;
+        }
+        .rank-bronze {
+            background: linear-gradient(90deg, rgba(205, 127, 50, 0.12) 0%, rgba(22, 8, 11, 0.9) 100%) !important;
+            border-left: 4px solid #cd7f32 !important;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0406; }
+        ::-webkit-scrollbar-thumb { background: #2d0e14; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #e60026; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col tactical-grid selection:bg-accentRed selection:text-white">
+
+    <!-- NAVIGATION HEADER -->
+    <header class="bg-black/90 backdrop-blur-md border-b border-cardBorder sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between py-3 gap-3">
+            
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('inicio')">
+                <div class="w-10 h-10 rounded-full lince-ring bg-cardDark flex items-center justify-center p-0.5 overflow-hidden">
+                    <img src="lince.png" alt="Copa Lince" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='https://placehold.co/100x100/580a14/e9c46a?text=LINCE';">
+                </div>
+                <div>
+                    <span class="font-header text-2xl font-black tracking-wider text-white">COPA <span class="text-brightRed">LINCE</span></span>
+                    <span class="font-mono text-[10px] text-gold block tracking-widest uppercase">LINCECODE COMPETITIONS</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex flex-wrap items-center justify-center gap-1.5 bg-cardDark p-1.5 rounded-xl border border-cardBorder text-xs font-bold">
+                <button onclick="switchTab('inicio')" id="nav-inicio" class="nav-tab active px-3 py-2 rounded-lg transition-all">Inicio</button>
+                <button onclick="switchTab('equipos')" id="nav-equipos" class="nav-tab px-3 py-2 rounded-lg text-gray-300 hover:text-white transition-all">Equipos</button>
+                <button onclick="switchTab('partidos')" id="nav-partidos" class="nav-tab px-3 py-2 rounded-lg text-gray-300 hover:text-white transition-all">Calendario & Partidos</button>
+                <button onclick="switchTab('posiciones')" id="nav-posiciones" class="nav-tab px-3 py-2 rounded-lg text-gray-300 hover:text-white transition-all">Clasificación</button>
+                <button onclick="switchTab('estadisticas')" id="nav-estadisticas" class="nav-tab px-3 py-2 rounded-lg text-gray-300 hover:text-white transition-all">Estadísticas</button>
+                
+                <!-- Staff Access Button -->
+                <button onclick="toggleStaffModal()" id="btn-staff-toggle" class="hidden ml-1 bg-cardBorder text-brightRed border border-brightRed/30 hover:bg-accentRed hover:text-white px-3 py-2 rounded-lg transition-all flex items-center gap-1.5" style="display:none" aria-hidden="true" tabindex="-1">
+                    <i id="staff-icon" class="fa-solid fa-lock text-[11px]"></i>
+                    <span id="staff-btn-text">STAFF</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION TOAST CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+    <div id="shared-state-gate" class="hidden fixed inset-0 z-[45] flex items-center justify-center bg-pitchDark/95 p-6 text-center backdrop-blur-sm">
+        <div class="max-w-lg space-y-3 rounded-2xl border border-cardBorder bg-cardDark p-8 shadow-2xl">
+            <h2 class="font-header text-2xl font-bold text-white">Configurar Copa compartida</h2>
+            <p id="shared-state-gate-message" class="text-sm text-gray-300">Si tienes datos en la página local, impórtalos antes de iniciar sesión STAFF. Después entra con <strong>Alt + A</strong> para crear el estado compartido.</p>
+            <div class="flex flex-wrap justify-center gap-2 pt-2">
+                <button type="button" onclick="exportLocalStateBackup()" class="rounded-lg border border-cardBorder bg-pitchDark px-3 py-2 text-xs font-bold text-white hover:bg-burgundy">Descargar respaldo local</button>
+                <button type="button" onclick="document.getElementById('state-backup-file').click()" class="rounded-lg bg-burgundy px-3 py-2 text-xs font-bold text-white hover:bg-accentRed">Importar respaldo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+        <div id="cloud-status-banner" class="hidden rounded-xl border border-amber-700/70 bg-amber-950/60 p-4 text-sm text-amber-100" role="status"></div>
+        <section id="data-transfer-tools" class="hidden rounded-xl border border-cardBorder bg-cardDark p-4">
+            <p class="text-sm font-bold text-white">Respaldo de datos</p>
+            <p class="mt-1 text-xs text-gray-400">Para pasar tus datos de la página local a Vercel, descarga el respaldo aquí y luego impórtalo en Vercel antes de iniciar sesión STAFF.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" onclick="exportLocalStateBackup()" class="rounded-lg border border-cardBorder bg-pitchDark px-3 py-2 text-xs font-bold text-white hover:bg-burgundy">Descargar respaldo</button>
+                <button type="button" onclick="document.getElementById('state-backup-file').click()" class="rounded-lg bg-burgundy px-3 py-2 text-xs font-bold text-white hover:bg-accentRed">Importar respaldo</button>
+                <input id="state-backup-file" type="file" accept="application/json,.json" class="hidden" onchange="importLocalStateBackup(this)">
+            </div>
+        </section>
+
+        <!-- ==================== 1. TAB: INICIO ==================== -->
+        <section id="view-inicio" class="tab-view space-y-6">
+            
+            <!-- Hero Card LinceCode -->
+            <div class="relative bg-gradient-to-b from-[#1e0a0e] via-[#120507] to-[#180709] border border-[#3d1218] rounded-2xl p-8 sm:p-12 text-center overflow-hidden shadow-2xl">
+                <!-- Tactical pitch lines effect -->
+                <div class="absolute inset-0 opacity-10 pointer-events-none">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] border-2 border-white rounded-full"></div>
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[720px] h-[360px] border-2 border-white rounded-b-full"></div>
+                </div>
+
+                <div class="relative z-10 flex flex-col items-center">
+                    <!-- Glowing Lynx Emblem Image -->
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full lince-ring bg-[#0c0406] flex items-center justify-center p-1 mb-5 shadow-2xl overflow-hidden">
+                        <img src="lince.png" alt="Copa Lince Emblem" class="w-full h-full object-cover rounded-full drop-shadow-[0_0_15px_rgba(230,0,38,0.7)]" onerror="this.onerror=null; this.src='https://placehold.co/200x200/580a14/e9c46a?text=COPA+LINCE';">
+                    </div>
+
+                    <h1 class="font-header text-5xl sm:text-7xl font-black text-white tracking-tight uppercase leading-none">
+                        COPA <span class="text-brightRed">LINCE</span>
+                    </h1>
+                    <p class="font-mono text-xs sm:text-sm text-gray-300 mt-3 tracking-widest uppercase">
+                        PLATAFORMA MULTIDISCIPLINARIA DE COMPETENCIAS · HACKATHON LINCECODE
+                    </p>
+                    <p class="font-mono text-xs text-gold mt-1">
+                        4 Disciplinas: EA FC 26 · Super Smash Bros · Just Dance · Karaoke
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4 SUMMARY METRIC CARDS GRID -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 text-center space-y-1 shadow-lg">
+                    <span id="dash-team-count" class="font-header text-4xl font-black text-white block">16</span>
+                    <span class="font-mono text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Equipos Activos</span>
+                </div>
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 text-center space-y-1 shadow-lg">
+                    <span id="dash-player-count" class="font-header text-4xl font-black text-brightRed block">96</span>
+                    <span class="font-mono text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Integrantes Totales</span>
+                </div>
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 text-center space-y-1 shadow-lg">
+                    <span class="font-header text-4xl font-black text-gold block">4</span>
+                    <span class="font-mono text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Disciplinas (90m c/u)</span>
+                </div>
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 text-center space-y-1 shadow-lg">
+                    <span id="dash-leader-name" class="font-header text-xl font-black text-emerald-400 truncate block mt-2">Por definir</span>
+                    <span class="font-mono text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Líder Acumulado</span>
+                </div>
+            </div>
+
+            <!-- DISCIPLINE STATUS GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- FIFA Card -->
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 space-y-3 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center gap-3 border-b border-cardBorder/60 pb-2">
+                        <span class="tournament-logo-frame"><img src="fifa.png" alt="Logo de EA SPORTS FC 26" class="tournament-logo tournament-logo-fifa"></span>
+                        <span class="font-header font-bold text-white text-base">1. EA SPORTS FC 26</span>
+                    </div>
+                    <div class="space-y-1 text-xs text-gray-300">
+                        <div class="flex justify-between"><span>Enfrentamientos:</span><span class="font-mono text-white"><span id="total-matches-fifa">0</span> Duelos</span></div>
+                        <div class="flex justify-between"><span>Partidas:</span><span class="font-mono text-white"><span id="total-games-fifa">0</span> Partidas</span></div>
+                        <div class="flex justify-between"><span>Progreso:</span><span id="prog-fifa" class="font-mono text-gold">0 / 0</span></div>
+                        <span id="status-fifa" class="text-[9px] font-mono text-amber-300">DESACTIVADO</span>
+                    </div>
+                    <button onclick="switchDiscipline(1)" class="w-full bg-cardBorder hover:bg-burgundy text-white font-bold py-2 rounded-lg text-xs transition">Ver Partidas FC 26</button>
+                </div>
+
+                <!-- Smash Card -->
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 space-y-3 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center gap-3 border-b border-cardBorder/60 pb-2">
+                        <span class="tournament-logo-frame"><img src="smashbros.png" alt="Logo de Super Smash Bros" class="tournament-logo tournament-logo-smash"></span>
+                        <span class="font-header font-bold text-white text-base">2. Super Smash Bros</span>
+                    </div>
+                    <div class="space-y-1 text-xs text-gray-300">
+                        <div class="flex justify-between"><span>Enfrentamientos:</span><span class="font-mono text-white"><span id="total-matches-smash">0</span> Duelos</span></div>
+                        <div class="flex justify-between"><span>Partidas:</span><span class="font-mono text-white"><span id="total-games-smash">0</span> Partidas</span></div>
+                        <div class="flex justify-between"><span>Progreso:</span><span id="prog-smash" class="font-mono text-gold">0 / 0</span></div>
+                        <span id="status-smash" class="text-[9px] font-mono text-amber-300">DESACTIVADO</span>
+                    </div>
+                    <button onclick="switchDiscipline(2)" class="w-full bg-cardBorder hover:bg-burgundy text-white font-bold py-2 rounded-lg text-xs transition">Ver Partidas Smash</button>
+                </div>
+
+                <!-- Just Dance Card -->
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 space-y-3 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center gap-3 border-b border-cardBorder/60 pb-2">
+                        <span class="tournament-logo-frame"><img src="justdance.png" alt="Logo de Just Dance" class="tournament-logo tournament-logo-dance"></span>
+                        <span class="font-header font-bold text-white text-base">3. Just Dance</span>
+                    </div>
+                    <div class="space-y-1 text-xs text-gray-300">
+                        <div class="flex justify-between"><span>Enfrentamientos:</span><span class="font-mono text-white"><span id="total-matches-dance">0</span> Duelos</span></div>
+                        <div class="flex justify-between"><span>Votaciones:</span><span class="font-mono text-white"><span id="total-games-dance">0</span></span></div>
+                        <div class="flex justify-between"><span>Progreso:</span><span id="prog-dance" class="font-mono text-gold">0 / 0</span></div>
+                        <span id="status-dance" class="text-[9px] font-mono text-amber-300">DESACTIVADO</span>
+                    </div>
+                    <button onclick="switchDiscipline(3)" class="w-full bg-cardBorder hover:bg-burgundy text-white font-bold py-2 rounded-lg text-xs transition">Ver Partidas Dance</button>
+                </div>
+
+                <!-- Karaoke Card -->
+                <div class="bg-cardDark border border-cardBorder rounded-xl p-5 space-y-3 shadow-lg flex flex-col justify-between">
+                    <div class="flex items-center gap-3 border-b border-cardBorder/60 pb-2">
+                        <span class="tournament-logo-frame"><img src="karaoke.png" alt="Logo de Karaoke" class="tournament-logo tournament-logo-karaoke"></span>
+                        <span class="font-header font-bold text-white text-base">4. Karaoke</span>
+                    </div>
+                    <div class="space-y-1 text-xs text-gray-300">
+                        <div class="flex justify-between"><span>Enfrentamientos:</span><span class="font-mono text-white"><span id="total-matches-karaoke">0</span> Duelos</span></div>
+                        <div class="flex justify-between"><span>Votaciones:</span><span class="font-mono text-white"><span id="total-games-karaoke">0</span></span></div>
+                        <div class="flex justify-between"><span>Progreso:</span><span id="prog-karaoke" class="font-mono text-gold">0 / 0</span></div>
+                        <span id="status-karaoke" class="text-[9px] font-mono text-amber-300">DESACTIVADO</span>
+                    </div>
+                    <button onclick="switchDiscipline(4)" class="w-full bg-cardBorder hover:bg-burgundy text-white font-bold py-2 rounded-lg text-xs transition">Ver Partidas Karaoke</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. TAB: EQUIPOS ==================== -->
+        <section id="view-equipos" class="tab-view space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-cardBorder pb-4">
+                <div>
+                    <h2 class="font-header text-3xl font-bold text-white tracking-wide">EQUIPOS COPA LINCE</h2>
+                    <p class="text-xs text-gray-400 font-mono">14 equipos oficiales, HelloWorld("print"), Maestro y 2 equipos STAFF; seis integrantes por equipo.</p>
+                </div>
+                
+                <div class="staff-action-col hidden">
+                    <button onclick="openAddTeamMemberModal()" class="bg-accentRed hover:bg-brightRed text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-pen-to-square"></i> Editar Integrantes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Teams Grid -->
+            <div id="equipos-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- ==================== 3. TAB: CALENDARIO & PARTIDOS ==================== -->
+        <section id="view-partidos" class="tab-view space-y-6 hidden">
+            <!-- Discipline Navigation Tabs & Timer Bar -->
+            <div class="bg-cardDark border border-cardBorder rounded-2xl p-4 space-y-4 shadow-xl">
+                
+                <!-- Discipline Selection Buttons -->
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-cardBorder/60 pb-3">
+                    <div class="flex flex-wrap gap-2 text-xs font-bold">
+                        <button onclick="switchDiscipline(1)" id="disc-tab-1" class="disc-tab active px-4 py-2 rounded-xl border border-cardBorder transition-all flex items-center gap-2">
+                            <span class="tournament-logo-frame disc-tab-logo-frame"><img src="fifa.png" alt="" aria-hidden="true" class="tournament-logo tournament-logo-fifa"></span> 1. EA FC 26
+                        </button>
+                        <button onclick="switchDiscipline(2)" id="disc-tab-2" class="disc-tab px-4 py-2 rounded-xl border border-cardBorder transition-all flex items-center gap-2">
+                            <span class="tournament-logo-frame disc-tab-logo-frame"><img src="smashbros.png" alt="" aria-hidden="true" class="tournament-logo tournament-logo-smash"></span> 2. Super Smash Bros
+                        </button>
+                        <button onclick="switchDiscipline(3)" id="disc-tab-3" class="disc-tab px-4 py-2 rounded-xl border border-cardBorder transition-all flex items-center gap-2">
+                            <span class="tournament-logo-frame disc-tab-logo-frame"><img src="justdance.png" alt="" aria-hidden="true" class="tournament-logo tournament-logo-dance"></span> 3. Just Dance
+                        </button>
+                        <button onclick="switchDiscipline(4)" id="disc-tab-4" class="disc-tab px-4 py-2 rounded-xl border border-cardBorder transition-all flex items-center gap-2">
+                            <span class="tournament-logo-frame disc-tab-logo-frame"><img src="karaoke.png" alt="" aria-hidden="true" class="tournament-logo tournament-logo-karaoke"></span> 4. Karaoke
+                        </button>
+                    </div>
+
+                    <div class="staff-action-col hidden flex flex-wrap gap-2">
+                        <button id="manage-participants-button" onclick="openParticipantOptionsModal()" class="hidden bg-burgundy hover:bg-secondaryRed text-white font-bold px-3 py-1.5 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-user-group mr-1"></i> Alineaciones
+                        </button>
+                        <button onclick="confirmResetDraw()" class="bg-cardBorder hover:bg-accentRed text-white font-bold px-3 py-1.5 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-shuffle mr-1"></i> Nuevo Sorteo Aleatorio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual 90-Minute Timer Bar -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-pitchDark p-4 rounded-xl border border-cardBorder">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-burgundy flex items-center justify-center text-brightRed text-lg">
+                            <i class="fa-solid fa-stopwatch animate-pulse"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-mono text-gray-400 block uppercase">BLOQUE DE TIEMPO OFICIAL (90 MIN)</span>
+                            <span id="disc-title-display" class="font-header font-bold text-white text-base">EA SPORTS FC 26</span>
+                        </div>
+                    </div>
+
+                    <!-- Countdown Digital Display & Controls -->
+                    <div class="flex items-center gap-4">
+                        <div id="timer-display" class="font-mono font-black text-3xl text-gold tracking-widest bg-cardDark px-4 py-1.5 rounded-xl border border-cardBorder">
+                            90:00
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="startTimer()" title="Iniciar" class="w-9 h-9 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center transition">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button onclick="pauseTimer()" title="Pausar" class="w-9 h-9 rounded-lg bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center transition">
+                                <i class="fa-solid fa-pause"></i>
+                            </button>
+                            <button onclick="resetTimer()" title="Reiniciar 90m" class="w-9 h-9 rounded-lg bg-cardBorder hover:bg-gray-700 text-gray-200 font-bold text-xs flex items-center justify-center transition">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matches List Accordion Container -->
+            <div id="matches-list-container" class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                <!-- JS Injected 7 Matchups for Selected Discipline -->
+            </div>
+        </section>
+
+        <!-- ==================== 4. TAB: CLASIFICACIÓN ==================== -->
+        <section id="view-posiciones" class="tab-view space-y-6 hidden">
+            <div class="border-b border-cardBorder pb-4">
+                <h2 class="font-header text-3xl font-bold text-white tracking-wide">TABLA GENERAL DE CLASIFICACIÓN</h2>
+                <p class="text-xs text-gray-400 font-mono">Eliminatorias: 1 punto por ronda ganada, +5 al campeón. En Karaoke y Just Dance gana la mayor suma.</p>
+            </div>
+
+            <div class="bg-cardDark rounded-2xl border border-cardBorder overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-burgundy text-white font-header uppercase tracking-wider text-xs border-b border-cardBorder">
+                            <tr>
+                                <th class="px-4 py-3.5">Pos</th>
+                                <th class="px-4 py-3.5">Equipo</th>
+                                <th class="px-4 py-3.5 text-center">FC 26</th>
+                                <th class="px-4 py-3.5 text-center">Smash</th>
+                                <th class="px-4 py-3.5 text-center">Dance</th>
+                                <th class="px-4 py-3.5 text-center">Karaoke</th>
+                                <th class="px-4 py-3.5 text-center">PJ</th>
+                                <th class="px-4 py-3.5 text-center">PG</th>
+                                <th class="px-4 py-3.5 text-center">PP</th>
+                                <th class="px-4 py-3.5 text-center text-brightRed font-black">TOTAL PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-tbody" class="divide-y divide-cardBorder/50">
+                            <!-- JS Injected Standings -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 5. TAB: ESTADÍSTICAS ==================== -->
+        <section id="view-estadisticas" class="tab-view space-y-6 hidden">
+            <div class="border-b border-cardBorder pb-4">
+                <h2 class="font-header text-3xl font-bold text-white tracking-wide">ESTADÍSTICAS Y RÉCORDS GENERALES</h2>
+                <p class="text-xs text-gray-400 font-mono">Métricas acumuladas en tiempo real a lo largo de los enfrentamientos.</p>
+            </div>
+
+            <!-- Stats Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Leader Team -->
+                <div class="bg-cardDark rounded-xl border border-cardBorder p-5 space-y-2 shadow-lg">
+                    <div class="flex items-center justify-between text-xs text-gray-400 font-mono uppercase">
+                        <span>Equipo Líder</span>
+                        <i class="fa-solid fa-trophy text-gold text-base"></i>
+                    </div>
+                    <div id="stat-leader-team" class="font-header font-bold text-xl text-white">Por definir</div>
+                    <div id="stat-leader-pts" class="text-xs text-gold font-mono font-semibold">0 Puntos acumulados</div>
+                </div>
+
+                <!-- Total Goals / Victories -->
+                <div class="bg-cardDark rounded-xl border border-cardBorder p-5 space-y-2 shadow-lg">
+                    <div class="flex items-center justify-between text-xs text-gray-400 font-mono uppercase">
+                        <span>Partidas Disputadas</span>
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                    </div>
+                    <div id="stat-played-games" class="font-header font-bold text-2xl text-white">0 / 0</div>
+                    <div id="stat-played-pct" class="text-xs text-emerald-400 font-mono font-semibold">0% completado</div>
+                </div>
+
+                <!-- Total Points Awarded -->
+                <div class="bg-cardDark rounded-xl border border-cardBorder p-5 space-y-2 shadow-lg">
+                    <div class="flex items-center justify-between text-xs text-gray-400 font-mono uppercase">
+                        <span>Puntos Otorgados</span>
+                        <i class="fa-solid fa-star text-brightRed text-base"></i>
+                    </div>
+                    <div id="stat-total-pts-awarded" class="font-header font-bold text-2xl text-white">0</div>
+                    <div class="text-xs text-brightRed font-mono font-semibold">Puntos de rondas y bonos</div>
+                </div>
+
+                <!-- Average Points Per Team -->
+                <div class="bg-cardDark rounded-xl border border-cardBorder p-5 space-y-2 shadow-lg">
+                    <div class="flex items-center justify-between text-xs text-gray-400 font-mono uppercase">
+                        <span>Promedio Pts/Equipo</span>
+                        <i class="fa-solid fa-chart-line text-purple-400 text-base"></i>
+                    </div>
+                    <div id="stat-avg-pts" class="font-header font-bold text-2xl text-white">0.0</div>
+                    <div class="text-xs text-purple-400 font-mono font-semibold">Promedio general</div>
+                </div>
+            </div>
+
+            <!-- Best Discipline Performers -->
+            <div class="bg-cardDark border border-cardBorder rounded-2xl p-6 space-y-4 shadow-xl">
+                <h3 class="font-header text-xl font-bold text-white border-b border-cardBorder pb-3">
+                    LÍDERES POR DISCIPLINA
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="discipline-leaders-grid">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-black/90 border-t border-cardBorder py-6 text-center text-xs text-gray-500 font-mono">
+        <p>COPA LINCE · Plataforma Oficial de Competencias · Hackathon LINCECODE · Ingeniería de Software</p>
+    </footer>
+
+    <!-- GLOBAL MODAL DIALOG -->
+    <div id="global-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-box" class="bg-cardDark border border-cardBorder rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-cardBorder pb-3">
+                <h3 id="modal-title" class="font-header font-bold text-lg text-white">Título del Modal</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="modal-content" class="space-y-4 text-xs text-gray-300">
+                <!-- Modal Body -->
+            </div>
+            <div id="modal-actions" class="flex justify-end gap-2 pt-3 border-t border-cardBorder/50">
+                <!-- Action Buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CORE -->
+    <script>
+        // OFFICIAL 14 TEAMS PRE-LOADED
+        const INITIAL_TEAMS = [
+            "Asustadores",
+            "Brigaditos",
+            "Chilaquiles Verdes Fullstack",
+            "CMDC",
+            "Ctrl + C Ctrl + V",
+            "CyberLinces MZT",
+            "De Volon Pinpon",
+            "error 404",
+            "Las Cachorras",
+            "Los foráneos",
+            "Los Fosiles",
+            "S4HUR.exe",
+            "SSPC",
+            "The Bukis"
+        ];
+
+        const DISCIPLINES = [
+            { id: 1, name: "EA SPORTS FC 26", icon: "fa-gamepad", color: "text-brightRed" },
+            { id: 2, name: "Super Smash Bros", icon: "fa-hand-fist", color: "text-amber-400" },
+            { id: 3, name: "Just Dance", icon: "fa-music", color: "text-purple-400" },
+            { id: 4, name: "Karaoke", icon: "fa-microphone-lines", color: "text-pink-400" }
+        ];
+
+        const TOURNAMENT_OPTIONS = {
+            1: { enabled: true, format: "rounds", rounds: 6, playersPerTeam: 6 },
+            2: { enabled: true, format: "knockout", brackets: 6, playersPerTeam: 6 },
+            3: { enabled: true, format: "rounds", rounds: 2, playersPerTeam: 4, playersPerMatch: 2, voting: true },
+            4: { enabled: true, format: "score", rounds: 1, playersPerTeam: 2, voting: true }
+        };
+        const TOURNAMENT_SCORING = { scoreMode: "sum", championBonus: 5, roundWinPoints: 1 };
+        const SCHEDULE_VERSION = 7;
+        const SUPABASE_CONFIG = {
+            url: "https://kgysoxvwkqmlzyutnqsc.supabase.co",
+            anonKey: "sb_publishable_Pnuefi-zB1de6RGhbjosSg_YsGTB6Cm"
+        };
+
+        // STAFF Authorization Key
+        const STAFF_PIN_REQUIRED = "12345678";
+
+        // Application State
+        let state = {
+            isStaff: false,
+            equipos: [],
+            partidos: [],
+            scheduleVersion: SCHEDULE_VERSION,
+            expandedMatchId: null,
+            activeDiscipline: 1,
+            timer: {
+                secondsLeft: 5400, // 90 minutes
+                isRunning: false
+            }
+        };
+
+        let timerInterval = null;
+        let migratedTournamentFormat = false;
+        let pendingTournamentPlayers = null;
+        let supabaseClient = null;
+        let cloudStateExists = false;
+
+        // Init App
+        window.addEventListener('DOMContentLoaded', async () => {
+            loadState();
+            document.addEventListener('keydown', event => {
+                if (event.altKey && event.key.toLowerCase() === 'a') {
+                    event.preventDefault();
+                    toggleStaffModal();
+                }
+            });
+            if (isSupabaseConfigured()) {
+                try {
+                    await initializeSharedState();
+                } catch (error) {
+                    console.error("Error conectando con Supabase", error);
+                    setCloudStatus("No se pudo conectar con Supabase. Revisa la configuración y vuelve a cargar la página.");
+                }
+            } else {
+                setCloudStatus("Modo local: los cambios solo se guardan en este navegador. Configura Supabase antes de publicar para compartir los datos.");
+            }
+            updateStaffModeUI();
+            renderAllViews();
+            if (migratedTournamentFormat) {
+                localStorage.setItem('copa_lince_platform_state_v1', JSON.stringify(state));
+                showToast("Calendario actualizado. Revisa los resultados antes de continuar.", "info");
+            }
+        });
+
+        function isSupabaseConfigured() {
+            return Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+        }
+
+        function setCloudStatus(message, visible = true) {
+            const banner = document.getElementById('cloud-status-banner');
+            if (!banner) return;
+            banner.innerText = message;
+            banner.classList.toggle('hidden', !visible);
+        }
+
+        function setDataTransferToolsVisible(visible) {
+            document.getElementById('data-transfer-tools')?.classList.toggle('hidden', !visible);
+        }
+
+        function exportLocalStateBackup() {
+            const backup = {
+                format: 'copa-lince-backup',
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                state: { ...state, isStaff: false }
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `copa-lince-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+            showToast("Respaldo descargado. Guárdalo y no lo compartas públicamente.", "success");
+        }
+
+        async function importLocalStateBackup(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            const previousState = JSON.stringify(state);
+            const previousMigrationStatus = migratedTournamentFormat;
+            try {
+                const backup = JSON.parse(await file.text());
+                if (backup.format !== 'copa-lince-backup' || backup.version !== 1 ||
+                    !backup.state || !Array.isArray(backup.state.equipos) ||
+                    !Array.isArray(backup.state.partidos)) {
+                    throw new Error("El archivo no tiene un formato de respaldo de Copa Lince válido.");
+                }
+
+                loadState(backup.state);
+                const scheduleWasUpdated = migratedTournamentFormat;
+                state.isStaff = false;
+                localStorage.setItem('copa_lince_platform_state_v1', JSON.stringify(state));
+                document.getElementById('shared-state-gate')?.classList.remove('hidden');
+                const gateMessage = document.getElementById('shared-state-gate-message');
+                if (gateMessage) gateMessage.innerText = scheduleWasUpdated
+                    ? "Respaldo importado y calendario actualizado. Los resultados del formato anterior se reiniciaron. Entra con Alt + A para guardar la Copa compartida."
+                    : "Respaldo importado. Ahora entra con Alt + A para guardar estos equipos y resultados en la Copa compartida.";
+                setCloudStatus(scheduleWasUpdated
+                    ? "Respaldo importado; se sortearon los nuevos formatos y reiniciaron sus resultados. Entra como STAFF con Alt + A para inicializar la Copa compartida."
+                    : "Respaldo importado en este navegador. Ahora entra con Alt + A para inicializar la Copa compartida.", true);
+                setDataTransferToolsVisible(false);
+                updateStaffModeUI();
+                renderAllViews();
+                showToast(scheduleWasUpdated
+                    ? "Respaldo importado; el calendario y resultados se reiniciaron para las nuevas reglas."
+                    : "Respaldo importado. Entra como STAFF para guardarlo en Supabase.", "success");
+            } catch (error) {
+                state = JSON.parse(previousState);
+                migratedTournamentFormat = previousMigrationStatus;
+                console.error("Error importando respaldo de Copa Lince", error);
+                showToast(error.message || "No se pudo leer el archivo de respaldo.", "error");
+            } finally {
+                input.value = '';
+            }
+        }
+
+        async function initializeSharedState() {
+            setDataTransferToolsVisible(true);
+            if (!window.supabase || !window.supabase.createClient) {
+                setCloudStatus("No se pudo cargar Supabase. Revisa tu conexión a internet y vuelve a cargar la página.");
+                return;
+            }
+            supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+            const { data, error } = await supabaseClient
+                .from('copa_lince_state')
+                .select('state, updated_at')
+                .eq('id', 1)
+                .maybeSingle();
+            if (error) {
+                console.error("Error cargando el estado compartido", error);
+                setCloudStatus("No se pudo cargar la base de datos. Confirma la configuración de Supabase y ejecuta supabase-setup.sql.");
+                return;
+            }
+
+            if (data) {
+                cloudStateExists = true;
+                loadState(data.state);
+                setCloudStatus("", false);
+                setDataTransferToolsVisible(false);
+            } else {
+                cloudStateExists = false;
+                document.getElementById('shared-state-gate')?.classList.remove('hidden');
+                setCloudStatus("La base en línea está vacía. Entra como STAFF con Alt + A para publicar los datos iniciales.", true);
+            }
+
+            supabaseClient
+                .channel('copa-lince-shared-state')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'copa_lince_state',
+                    filter: 'id=eq.1'
+                }, payload => {
+                    if (!payload.new || !payload.new.state) return;
+                    const isStaff = state.isStaff;
+                    cloudStateExists = true;
+                    loadState(payload.new.state);
+                    state.isStaff = isStaff;
+                    document.getElementById('shared-state-gate')?.classList.add('hidden');
+                    setCloudStatus("", false);
+                    setDataTransferToolsVisible(false);
+                    updateStaffModeUI();
+                    renderAllViews();
+                })
+                .subscribe(channelStatus => {
+                    if (channelStatus === 'CHANNEL_ERROR' || channelStatus === 'TIMED_OUT') {
+                        console.error("No se pudo iniciar la sincronización en tiempo real de Supabase.");
+                        setCloudStatus("Los datos se cargan, pero la sincronización en tiempo real no está disponible. Recarga la página para ver cambios nuevos.");
+                    }
+                });
+        }
+
+        function loadState(sharedState = null) {
+            migratedTournamentFormat = false;
+            const saved = sharedState
+                ? JSON.stringify(sharedState)
+                : localStorage.getItem('copa_lince_platform_state_v1') || localStorage.getItem('lincegol_platform_state_v3');
+            if (saved) {
+                try {
+                    state = { ...state, ...JSON.parse(saved) };
+                } catch(e) {
+                    console.error("Error cargando estado", e);
+                    initDefaultData();
+                }
+            } else {
+                initDefaultData();
+            }
+            state.isStaff = false;
+            delete state.playersPerMatch;
+            if (!Array.isArray(state.equipos)) state.equipos = [];
+            if (!Array.isArray(state.partidos)) state.partidos = [];
+            ensureStaffTeams();
+            ensureTournamentPlayerAssignments();
+            refreshScheduledPlayerAssignments();
+            const configSignature = getScheduleConfigSignature();
+            if (state.scheduleConfigSignature !== configSignature ||
+                state.scheduleVersion !== SCHEDULE_VERSION ||
+                !isTournamentScheduleValid()) {
+                generateRoundRobinDraw();
+                state.scheduleConfigSignature = configSignature;
+                state.scheduleVersion = SCHEDULE_VERSION;
+                migratedTournamentFormat = true;
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('copa_lince_platform_state_v1', JSON.stringify(state));
+            renderAllViews();
+            if (supabaseClient && state.isStaff) {
+                persistSharedState().catch(error => {
+                    console.error("Error guardando el estado compartido", error);
+                    showToast("No se guardaron los cambios en línea. Revisa la conexión y permisos STAFF.", "error");
+                });
+            }
+        }
+
+        async function persistSharedState() {
+            if (!supabaseClient || !state.isStaff) {
+                throw new Error("Se requiere una sesión STAFF para guardar cambios compartidos.");
+            }
+            const sharedState = { ...state, isStaff: false };
+            const { error } = await supabaseClient
+                .from('copa_lince_state')
+                .upsert({
+                    id: 1,
+                    state: sharedState,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' });
+            if (error) throw error;
+            cloudStateExists = true;
+            document.getElementById('shared-state-gate')?.classList.add('hidden');
+            setCloudStatus("", false);
+            setDataTransferToolsVisible(false);
+        }
+
+        function initDefaultData() {
+            // Build the 14 official teams with six members each.
+            state.equipos = INITIAL_TEAMS.map((teamName, index) => {
+                return createTeam(index + 1, teamName);
+            });
+            ensureStaffTeams();
+            ensureTournamentPlayerAssignments();
+            generateRoundRobinDraw();
+            state.scheduleVersion = SCHEDULE_VERSION;
+            state.scheduleConfigSignature = getScheduleConfigSignature();
+        }
+
+        function createTeam(id, name, extra = {}) {
+            return {
+                id,
+                nombre: name,
+                integrantes: Array.from({ length: 6 }, (_, index) => ({
+                    id: id * 10 + index + 1,
+                    num: index + 1,
+                    nombre: `Jugador ${index + 1}`
+                })),
+                tournamentPlayerIds: {},
+                active: true,
+                ...extra
+            };
+        }
+
+        function ensureStaffTeams() {
+            [1, 2].forEach(slot => {
+                if (!state.equipos.some(team => team.staffSlot === slot)) {
+                    state.equipos.push(createTeam(14 + slot, `STAFF ${slot}`, {
+                        isStaffTeam: true,
+                        manualTournamentRoster: true,
+                        staffSlot: slot
+                    }));
+                }
+            });
+            if (!state.equipos.some(team => team.isHelloWorldTeam)) {
+                state.equipos.push(createTeam(17, 'HelloWorld("print")', { isHelloWorldTeam: true }));
+            }
+            if (!state.equipos.some(team => team.isMaestroTeam)) {
+                state.equipos.push(createTeam(18, 'Maestro', {
+                    isMaestroTeam: true,
+                    manualTournamentRoster: true
+                }));
+            }
+        }
+
+        function ensureTournamentPlayerAssignments() {
+            state.equipos.forEach(team => {
+                if (!hasValidTournamentPlayerAssignments(team)) assignTournamentPlayers(team);
+            });
+        }
+
+        function refreshScheduledPlayerAssignments() {
+            state.partidos.forEach(match => {
+                const teamA = state.equipos.find(team => team.id === match.teamAId);
+                const teamB = state.equipos.find(team => team.id === match.teamBId);
+                if (!Array.isArray(match.games)) return;
+                match.games.forEach(game => {
+                    game.playerAIds = teamA ? getPlayersForMatch(teamA, match.disciplineId, match).map(player => player.id) : [];
+                    game.playerBIds = teamB ? getPlayersForMatch(teamB, match.disciplineId, match).map(player => player.id) : [];
+                });
+            });
+        }
+
+        function hasValidTournamentPlayerAssignments(team) {
+            const memberIds = new Set(team.integrantes.map(member => member.id));
+            const assignments = team.tournamentPlayerIds;
+            if (![1, 2, 3, 4].every(disciplineId => {
+                const ids = assignments && assignments[disciplineId];
+                const requiredCount = getTournamentPlayerCount(disciplineId);
+                return Array.isArray(ids) && ids.length === requiredCount &&
+                    (isManualRosterTeam(team) || new Set(ids).size === requiredCount) &&
+                    ids.every(id => memberIds.has(id));
+            })) return false;
+
+            const dancePlayers = new Set(assignments[3]);
+            return assignments[4].every(id => !dancePlayers.has(id)) &&
+                (isManualRosterTeam(team) ||
+                    team.integrantes.every(member => dancePlayers.has(member.id) || assignments[4].includes(member.id)));
+        }
+
+        function isManualRosterTeam(team) {
+            return Boolean(team.isStaffTeam || team.isMaestroTeam || team.manualTournamentRoster);
+        }
+
+        function getTournamentPlayerCount(disciplineId) {
+            return TOURNAMENT_OPTIONS[disciplineId].playersPerTeam;
+        }
+
+        function getTournamentPlayerSlotCount(disciplineId) {
+            return getTournamentAssignmentLabels(disciplineId).length;
+        }
+
+        function getTournamentAssignmentLabels(disciplineId) {
+            if (disciplineId === 1) return Array.from({ length: 6 }, (_, index) => `J${index + 1}`);
+            if (disciplineId === 2) return Array.from({ length: 6 }, (_, index) => `B${index + 1}`);
+            if (disciplineId === 3) return ['J1 · P1', 'J1 · P2', 'J2 · P1', 'J2 · P2'];
+            return ['P1', 'P2'];
+        }
+
+        function isVotingDiscipline(disciplineId) {
+            const options = TOURNAMENT_OPTIONS[disciplineId];
+            return options.voting === true || options.format === 'score';
+        }
+
+        function assignTournamentPlayers(team) {
+            const playerIds = shuffleArray(team.integrantes).map(player => player.id);
+            const karaokePlayers = shuffleArray(playerIds).slice(0, 2);
+            const dancePool = playerIds.filter(id => !karaokePlayers.includes(id));
+            team.tournamentPlayerIds = {
+                1: [...playerIds],
+                2: shuffleArray(playerIds),
+                3: dancePool,
+                4: karaokePlayers
+            };
+        }
+
+        function shuffleArray(items) {
+            const shuffled = [...items];
+            for (let index = shuffled.length - 1; index > 0; index--) {
+                const randomIndex = Math.floor(Math.random() * (index + 1));
+                [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+            }
+            return shuffled;
+        }
+
+        function getScheduleConfigSignature() {
+            return JSON.stringify({
+                options: DISCIPLINES.map(discipline => ({
+                    id: discipline.id,
+                    ...TOURNAMENT_OPTIONS[discipline.id]
+                })),
+                teams: state.equipos.map(team => [team.id, team.active !== false])
+            });
+        }
+
+        function isTournamentScheduleValid() {
+            if (!state.partidos.every(match =>
+                TOURNAMENT_OPTIONS[match.disciplineId]?.enabled &&
+                Array.isArray(match.games) && match.games.length === 1
+            )) return false;
+
+            const activeTeamCount = state.equipos.filter(team => team.active !== false).length;
+            const bracketSize = 2 ** Math.ceil(Math.log2(Math.max(activeTeamCount, 2)));
+            return DISCIPLINES.every(discipline => {
+                const disciplineMatches = state.partidos.filter(match => match.disciplineId === discipline.id);
+                const options = TOURNAMENT_OPTIONS[discipline.id];
+                if (!options.enabled) return disciplineMatches.length === 0;
+                if (options.format === 'knockout') {
+                    const brackets = new Set(disciplineMatches.map(match => match.bracketIndex));
+                    return brackets.size === options.brackets &&
+                        disciplineMatches.length === options.brackets * (bracketSize - 1) &&
+                        [...brackets].every(bracketIndex =>
+                            disciplineMatches.filter(match => match.bracketIndex === bracketIndex).length === bracketSize - 1
+                        );
+                }
+                return disciplineMatches.length === options.rounds * Math.floor(activeTeamCount / 2) &&
+                    Array.from({ length: options.rounds }, (_, roundIndex) =>
+                        disciplineMatches.filter(match => match.roundIndex === roundIndex).length === Math.floor(activeTeamCount / 2)
+                    ).every(Boolean);
+            });
+        }
+
+        function generateRoundRobinDraw() {
+            state.partidos = [];
+            state.expandedMatchId = null;
+            ensureStaffTeams();
+            ensureTournamentPlayerAssignments();
+            const activeTeams = state.equipos.filter(team => team.active !== false);
+            DISCIPLINES.forEach(discipline => {
+                const options = TOURNAMENT_OPTIONS[discipline.id];
+                if (!options.enabled || activeTeams.length < 2) return;
+                if (options.format === 'knockout') {
+                    const roundPairings = generateRoundRobinPairingRounds(activeTeams, options.brackets);
+                    roundPairings.forEach((pairings, bracketIndex) =>
+                        generateEliminationBracket(discipline.id, activeTeams, bracketIndex, pairings)
+                    );
+                } else {
+                    generateTournamentRoundRobinDraw(discipline.id, activeTeams, options.rounds);
+                }
+            });
+            state.scheduleVersion = SCHEDULE_VERSION;
+            state.scheduleConfigSignature = getScheduleConfigSignature();
+        }
+
+        function generateRoundRobinPairingRounds(teams, roundCount) {
+            const roundTeams = shuffleArray(teams);
+            if (roundTeams.length % 2 !== 0) roundTeams.push(null);
+            const rounds = [];
+            for (let round = 0; round < roundTeams.length - 1; round++) {
+                const pairings = [];
+                for (let i = 0; i < roundTeams.length / 2; i++) {
+                    pairings.push([roundTeams[i], roundTeams[roundTeams.length - 1 - i]]);
+                }
+                rounds.push(pairings);
+                roundTeams.splice(1, 0, roundTeams.pop());
+            }
+            return shuffleArray(rounds).slice(0, Math.min(roundCount, rounds.length));
+        }
+
+        function generateTournamentRoundRobinDraw(disciplineId, teams, roundCount) {
+            const rounds = generateRoundRobinPairingRounds(teams, roundCount);
+            rounds.forEach((pairings, roundIndex) => {
+                pairings.filter(([teamA, teamB]) => teamA && teamB).forEach(([teamA, teamB], slotIndex) => {
+                    const match = {
+                        id: `match_${disciplineId}_r${roundIndex}_${teamA.id}_vs_${teamB.id}`,
+                        disciplineId,
+                        teamAId: teamA.id,
+                        teamBId: teamB.id,
+                        roundIndex,
+                        roundName: `Jornada ${roundIndex + 1}`,
+                        slotIndex
+                    };
+                    match.games = [createTournamentMatchGame(disciplineId, teamA, teamB, match)];
+                    state.partidos.push(match);
+                });
+            });
+        }
+
+        function generateEliminationBracket(disciplineId, teams, bracketIndex, roundPairings) {
+            const bracketSize = 2 ** Math.ceil(Math.log2(teams.length));
+            const byeCount = bracketSize - teams.length;
+            const openingGameCount = (teams.length - byeCount) / 2;
+            const totalRounds = Math.log2(bracketSize);
+            const roundNames = totalRounds === 5
+                ? ['Ronda preliminar', 'Octavos de final', 'Cuartos de final', 'Semifinal', 'Final']
+                : totalRounds === 4
+                ? ['Octavos de final', 'Cuartos de final', 'Semifinal', 'Final']
+                : Array.from({ length: totalRounds }, (_, index) =>
+                    index === totalRounds - 1 ? 'Final' : `Ronda ${index + 1}`);
+            const rounds = [];
+            const openingSlots = Array(bracketSize).fill(null);
+            const playedPairings = shuffleArray(roundPairings.filter(([teamA, teamB]) => teamA && teamB))
+                .slice(0, openingGameCount);
+            const playedTeams = new Set(playedPairings.flatMap(([teamA, teamB]) => [teamA.id, teamB.id]));
+            const byeTeams = shuffleArray(teams.filter(team => !playedTeams.has(team.id)));
+            const playedMatchIndexes = new Set(shuffleArray(
+                Array.from({ length: bracketSize / 2 }, (_, index) => index)
+            ).slice(0, openingGameCount));
+            let byeIndex = 0;
+            for (let matchIndex = 0; matchIndex < bracketSize / 2; matchIndex++) {
+                const firstSlot = matchIndex * 2;
+                if (playedMatchIndexes.has(matchIndex)) {
+                    const [teamA, teamB] = playedPairings.pop();
+                    if (Math.random() < 0.5) {
+                        openingSlots[firstSlot] = teamA;
+                        openingSlots[firstSlot + 1] = teamB;
+                    } else {
+                        openingSlots[firstSlot] = teamB;
+                        openingSlots[firstSlot + 1] = teamA;
+                    }
+                } else if (byeIndex < byeTeams.length) {
+                    const team = byeTeams[byeIndex++];
+                    openingSlots[firstSlot + (Math.random() < 0.5 ? 0 : 1)] = team;
+                }
+            }
+
+            for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
+                const matchCount = bracketSize / (2 ** (roundIndex + 1));
+                const round = [];
+                for (let slotIndex = 0; slotIndex < matchCount; slotIndex++) {
+                    const match = {
+                        id: `bracket_${disciplineId}_b${bracketIndex}_r${roundIndex}_m${slotIndex}`,
+                        disciplineId,
+                        bracketIndex,
+                        teamAId: roundIndex === 0 ? openingSlots[slotIndex * 2]?.id || null : null,
+                        teamBId: roundIndex === 0 ? openingSlots[slotIndex * 2 + 1]?.id || null : null,
+                        roundIndex,
+                        roundName: roundNames[roundIndex],
+                        slotIndex,
+                        isBye: roundIndex === 0 &&
+                            (!openingSlots[slotIndex * 2] || !openingSlots[slotIndex * 2 + 1])
+                    };
+                    match.games = [createTournamentMatchGame(
+                        disciplineId,
+                        roundIndex === 0 ? openingSlots[slotIndex * 2] : null,
+                        roundIndex === 0 ? openingSlots[slotIndex * 2 + 1] : null,
+                        match
+                    )];
+                    match.games[0].id = `${match.id}_game1`;
+                    round.push(match);
+                    state.partidos.push(match);
+                }
+                rounds.push(round);
+            }
+
+            rounds.forEach((round, roundIndex) => {
+                round.forEach((match, slotIndex) => {
+                    if (roundIndex > 0) {
+                        match.sourceMatchAId = rounds[roundIndex - 1][slotIndex * 2].id;
+                        match.sourceMatchBId = rounds[roundIndex - 1][slotIndex * 2 + 1].id;
+                    }
+                });
+            });
+            rounds[0].filter(match => match.isBye).forEach(match => {
+                match.games[0].ganadorTeamId = match.teamAId || match.teamBId;
+                advanceBracketWinner(match);
+            });
+        }
+
+        function advanceBracketWinner(match) {
+            if (match.roundIndex >= Math.max(...state.partidos
+                .filter(entry => entry.disciplineId === match.disciplineId &&
+                    entry.bracketIndex === match.bracketIndex)
+                .map(entry => entry.roundIndex))) return;
+            const nextMatch = state.partidos.find(entry =>
+                entry.disciplineId === match.disciplineId &&
+                entry.bracketIndex === match.bracketIndex &&
+                (entry.sourceMatchAId === match.id || entry.sourceMatchBId === match.id)
+            );
+            if (!nextMatch) return;
+            const slot = nextMatch.sourceMatchAId === match.id ? 'teamAId' : 'teamBId';
+            const previousTeamId = nextMatch[slot];
+            nextMatch[slot] = match.games[0].ganadorTeamId;
+            if (previousTeamId !== nextMatch[slot]) {
+                nextMatch.games[0].ganadorTeamId = null;
+                nextMatch.games[0].votesA = null;
+                nextMatch.games[0].votesB = null;
+                nextMatch.games[0].votesSubmitted = false;
+                nextMatch.games[0].scoreA = null;
+                nextMatch.games[0].scoreB = null;
+                advanceBracketWinner(nextMatch);
+            }
+            refreshKnockoutMatch(nextMatch);
+        }
+
+        function refreshKnockoutMatch(match) {
+            const teamA = state.equipos.find(team => team.id === match.teamAId);
+            const teamB = state.equipos.find(team => team.id === match.teamBId);
+            match.games[0].playerAIds = teamA ? getPlayersForMatch(teamA, match.disciplineId, match).map(player => player.id) : [];
+            match.games[0].playerBIds = teamB ? getPlayersForMatch(teamB, match.disciplineId, match).map(player => player.id) : [];
+        }
+
+        function getPlayersForMatch(team, disciplineId, match = {}) {
+            const assignedIds = team.tournamentPlayerIds && team.tournamentPlayerIds[disciplineId] || [];
+            const playerIds = disciplineId === 1
+                ? assignedIds.slice(match.roundIndex || 0, (match.roundIndex || 0) + 1)
+                : disciplineId === 2
+                    ? assignedIds.slice(match.bracketIndex || 0, (match.bracketIndex || 0) + 1)
+                    : disciplineId === 3
+                        ? assignedIds.slice((match.roundIndex || 0) * 2, (match.roundIndex || 0) * 2 + 2)
+                        : assignedIds;
+            return playerIds
+                .map(id => team.integrantes.find(member => member.id === id))
+                .filter(Boolean);
+        }
+
+        function getMaxPointsPerTeam() {
+            return DISCIPLINES.reduce((total, discipline) => {
+                const options = TOURNAMENT_OPTIONS[discipline.id];
+                if (!options.enabled) return total;
+                if (options.format === 'knockout') {
+                    const activeCount = state.equipos.filter(team => team.active !== false).length;
+                    const rounds = Math.ceil(Math.log2(Math.max(activeCount, 2)));
+                    return total + options.brackets *
+                        (rounds * TOURNAMENT_SCORING.roundWinPoints + TOURNAMENT_SCORING.championBonus);
+                }
+                return total + options.rounds * TOURNAMENT_SCORING.roundWinPoints;
+            }, 0);
+        }
+
+        function createTournamentMatchGame(disciplineId, teamA, teamB, match = {}) {
+            return {
+                id: `${disciplineId}_${teamA ? teamA.id : 'tbd'}_${teamB ? teamB.id : 'tbd'}_game1`,
+                numGame: 1,
+                playerAIds: teamA ? getPlayersForMatch(teamA, disciplineId, match).map(player => player.id) : [],
+                playerBIds: teamB ? getPlayersForMatch(teamB, disciplineId, match).map(player => player.id) : [],
+                votesA: null,
+                votesB: null,
+                votesSubmitted: false,
+                scoreA: null,
+                scoreB: null,
+                ganadorTeamId: null
+            };
+        }
+
+        function openParticipantOptionsModal() {
+            if (!state.isStaff) return;
+            pendingTournamentPlayers = null;
+            const firstTeam = state.equipos.find(team => team.active !== false) || state.equipos[0];
+            openModal(
+                "Alineaciones por torneo",
+                `<p class="text-xs text-gray-300">FC: seis jugadores, uno por jornada · Smash: seis participantes, uno por bracket · Just Dance: cuatro participantes en dos jornadas · Karaoke: los otros dos. STAFF 1, STAFF 2 y MAESTRO conservan sus alineaciones manuales.</p>`,
+                `
+                <button onclick="openManualTournamentPlayersModal(${firstTeam ? firstTeam.id : 0})" class="px-3.5 py-1.5 bg-burgundy text-white text-xs font-bold rounded-xl">
+                    Elegir manualmente
+                </button>
+                <button onclick="executeRandomTournamentPlayers()" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">
+                    Sorteo rápido
+                </button>
+                `
+            );
+        }
+
+        function openManualTournamentPlayersModal(teamId) {
+            if (!state.isStaff) return;
+            const team = state.equipos.find(entry => entry.id === teamId);
+            if (!team) return;
+
+            const pendingAssignments = pendingTournamentPlayers && pendingTournamentPlayers.teamId === teamId
+                ? pendingTournamentPlayers.assignments
+                : team.tournamentPlayerIds;
+            const teamOptions = state.equipos.map(entry =>
+                `<option value="${entry.id}" ${entry.id === teamId ? 'selected' : ''}>${escapeHtml(entry.nombre)}</option>`
+            ).join('');
+            const assignments = DISCIPLINES.map(discipline => {
+                const labels = getTournamentAssignmentLabels(discipline.id);
+                const slots = labels.map((label, slotIndex) => `
+                    <label class="flex min-w-24 flex-col gap-1 text-[9px] text-gray-400">
+                        <span>${label}</span>
+                        <select class="tournament-assignment w-full rounded-lg border border-cardBorder bg-pitchDark px-2 py-1.5 text-[10px] text-white" data-discipline-id="${discipline.id}" data-slot-index="${slotIndex}" aria-label="${discipline.name} ${label}">
+                            ${team.integrantes.map(player => `<option value="${player.id}" ${pendingAssignments[discipline.id][slotIndex] === player.id ? 'selected' : ''}>${escapeHtml(player.nombre)}</option>`).join('')}
+                        </select>
+                    </label>
+                `).join('');
+                return `
+                    <div class="space-y-2 rounded-xl border border-cardBorder/70 bg-pitchDark/70 p-3">
+                        <h4 class="text-xs font-bold text-gold">${escapeHtml(discipline.name)}</h4>
+                        <div class="flex flex-wrap gap-2">${slots}</div>
+                    </div>
+                `;
+            }).join('');
+
+            openModal(
+                "Elegir participantes",
+                `
+                <div class="space-y-3">
+                    <label class="block text-[11px] font-mono font-bold text-gold uppercase">Equipo</label>
+                    <select onchange="openManualTournamentPlayersModal(Number(this.value))" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-xs text-white">
+                        ${teamOptions}
+                    </select>
+                    <p class="text-[11px] text-gray-400">${isManualRosterTeam(team)
+                        ? 'Este equipo permite repetir jugadores en sus jornadas y brackets. Karaoke debe usar integrantes distintos a Just Dance.'
+                        : 'Asigna seis jugadores únicos a FC y a Smash. Los cuatro de Just Dance no pueden repetirse en Karaoke; los dos restantes quedan en Karaoke.'}</p>
+                    <div class="max-h-[55vh] space-y-2 overflow-y-auto pr-1">${assignments}</div>
+                </div>
+                `,
+                `
+                <button onclick="openParticipantOptionsModal()" class="px-3.5 py-1.5 bg-cardDark border border-cardBorder text-gray-300 text-xs font-bold rounded-xl">Volver</button>
+                <button onclick="saveManualTournamentPlayers(${team.id})" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">Guardar alineación</button>
+                `
+            );
+        }
+
+        function saveManualTournamentPlayers(teamId) {
+            const team = state.equipos.find(entry => entry.id === teamId);
+            if (!team || !state.isStaff) return;
+
+            const assignments = { 1: [], 2: [], 3: [], 4: [] };
+            document.querySelectorAll('.tournament-assignment').forEach(input => {
+                const playerId = Number(input.value);
+                const disciplineId = Number(input.dataset.disciplineId);
+                if (assignments[disciplineId] && Number.isInteger(playerId)) {
+                    assignments[disciplineId].push(playerId);
+                }
+            });
+
+            if (!hasValidTournamentPlayerAssignments({ ...team, tournamentPlayerIds: assignments })) {
+                showToast(isManualRosterTeam(team)
+                    ? "Revisa las alineaciones y asegúrate de que Karaoke no repita integrantes de Just Dance."
+                    : "Usa seis jugadores distintos en FC y Smash, y reserva para Karaoke los dos que no juegan Just Dance.", "error");
+                return;
+            }
+
+            pendingTournamentPlayers = { teamId, assignments };
+            openModal(
+                "Confirmar alineación",
+                `<p class="text-xs text-gray-300">Se actualizará la alineación del equipo ${escapeHtml(team.nombre)} y se reiniciarán los resultados guardados del torneo. ¿Continuar?</p>`,
+                `
+                <button onclick="openManualTournamentPlayersModal(${teamId})" class="px-3.5 py-1.5 bg-cardDark border border-cardBorder text-gray-300 text-xs font-bold rounded-xl">Volver</button>
+                <button onclick="confirmManualTournamentPlayers()" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">Sí, guardar</button>
+                `
+            );
+        }
+
+        function confirmManualTournamentPlayers() {
+            if (!pendingTournamentPlayers) return;
+            const { teamId, assignments } = pendingTournamentPlayers;
+            const team = state.equipos.find(entry => entry.id === teamId);
+            if (!team) {
+                showToast("No se encontró el equipo para actualizar su alineación.", "error");
+                return;
+            }
+            team.tournamentPlayerIds = assignments;
+            pendingTournamentPlayers = null;
+            generateRoundRobinDraw();
+            closeModal();
+            saveState();
+            showToast(`Alineación de ${team.nombre} guardada y calendario actualizado.`, "success");
+        }
+
+        function executeRandomTournamentPlayers() {
+            if (!state.isStaff) return;
+            state.equipos.filter(team => !isManualRosterTeam(team)).forEach(assignTournamentPlayers);
+            generateRoundRobinDraw();
+            closeModal();
+            saveState();
+            showToast("Alineaciones aleatorias listas. Se conservaron las selecciones manuales de STAFF y MAESTRO.", "success");
+        }
+
+        function confirmResetDraw() {
+            openModal(
+                "Nuevo Sorteo Aleatorio",
+                `<p class="text-xs text-gray-300">¿Deseas sortear de nuevo las llaves eliminatorias y los enfrentamientos activos? Se borrarán los marcadores registrados.</p>`,
+                `
+                <button onclick="closeModal()" class="px-3.5 py-1.5 bg-cardDark border border-cardBorder text-gray-300 text-xs font-bold rounded-xl">Cancelar</button>
+                <button onclick="executeResetDraw()" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">Sí, Sortear</button>
+                `
+            );
+        }
+
+        function executeResetDraw() {
+            closeModal();
+            generateRoundRobinDraw();
+            saveState();
+            showToast("Nuevo sorteo aleatorio generado; las llaves activas se actualizaron.", "success");
+        }
+
+        // Navigation Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+
+            const targetView = document.getElementById(`view-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+
+            if (targetView) targetView.classList.remove('hidden');
+            if (targetNav) targetNav.classList.add('active');
+
+            renderAllViews();
+        }
+
+        function toggleStaffModal() {
+            if (state.isStaff) {
+                if (isSupabaseConfigured()) {
+                    if (!supabaseClient) {
+                        showToast("No hay conexión con Supabase; no se puede administrar en modo compartido.", "error");
+                        return;
+                    }
+                    supabaseClient.auth.signOut().then(({ error }) => {
+                        if (error) {
+                            console.error("Error cerrando sesión STAFF", error);
+                            showToast("No se pudo cerrar la sesión STAFF.", "error");
+                            return;
+                        }
+                        state.isStaff = false;
+                        updateStaffModeUI();
+                        renderAllViews();
+                        showToast("Sesión STAFF cerrada.");
+                    }).catch(error => {
+                        console.error("Error cerrando sesión STAFF", error);
+                        showToast("No se pudo cerrar la sesión STAFF.", "error");
+                    });
+                    return;
+                }
+                state.isStaff = false;
+                showToast("Modo STAFF deshabilitado.");
+                updateStaffModeUI();
+                renderAllViews();
+                return;
+            }
+
+            const loginFields = isSupabaseConfigured()
+                ? `
+                    <p class="text-xs text-gray-400">Inicia sesión con la cuenta STAFF autorizada para sincronizar cambios en todos los dispositivos.</p>
+                    <input type="email" id="staff-email-input" autocomplete="username" placeholder="Correo STAFF" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brightRed">
+                    <input type="password" id="staff-password-input" autocomplete="current-password" placeholder="Contraseña" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brightRed font-mono">
+                `
+                : `
+                    <p class="text-xs text-gray-400">Modo local de prueba. Configura Supabase antes de publicar para que los permisos y cambios sean compartidos.</p>
+                    <input type="password" id="staff-pin-input" placeholder="Contraseña de autorización" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brightRed font-mono">
+                `;
+            openModal(
+                "Autenticación de Acceso STAFF",
+                `<div class="space-y-3">${loginFields}</div>`,
+                `
+                <button onclick="closeModal()" class="px-3.5 py-1.5 bg-cardDark border border-cardBorder text-gray-300 text-xs font-bold rounded-xl">Cancelar</button>
+                <button onclick="verifyStaffPin()" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">Ingresar</button>
+                `
+            );
+        }
+
+        async function verifyStaffPin() {
+            if (isSupabaseConfigured()) {
+                if (!supabaseClient) {
+                    showToast("No hay conexión con Supabase. Revisa la configuración e inténtalo de nuevo.", "error");
+                    return;
+                }
+                const email = document.getElementById('staff-email-input').value.trim();
+                const password = document.getElementById('staff-password-input').value;
+                let data, error;
+                try {
+                    ({ data, error } = await supabaseClient.auth.signInWithPassword({ email, password }));
+                } catch (loginError) {
+                    console.error("Error autenticando STAFF", loginError);
+                    showToast("No se pudo conectar con Supabase para iniciar sesión.", "error");
+                    return;
+                }
+                if (error) {
+                    console.error("Error autenticando STAFF", error);
+                    showToast("No se pudo iniciar sesión. Revisa el correo y la contraseña.", "error");
+                    return;
+                }
+                if (data.user.app_metadata?.role !== 'staff') {
+                    await supabaseClient.auth.signOut();
+                    showToast("Esta cuenta no tiene permisos de STAFF.", "error");
+                    return;
+                }
+                state.isStaff = true;
+                updateStaffModeUI();
+                const hadSharedState = cloudStateExists;
+                if (!cloudStateExists || migratedTournamentFormat) {
+                    try {
+                        await persistSharedState();
+                        migratedTournamentFormat = false;
+                    } catch (saveError) {
+                        state.isStaff = false;
+                        updateStaffModeUI();
+                        await supabaseClient.auth.signOut();
+                        console.error("Error inicializando el estado compartido", saveError);
+                        showToast("No se pudieron publicar los datos. Revisa la tabla y los permisos STAFF.", "error");
+                        return;
+                    }
+                }
+                closeModal();
+                renderAllViews();
+                showToast(hadSharedState ? "Sesión STAFF conectada a la Copa compartida." : "Copa compartida inicializada.", "success");
+                return;
+            }
+
+            const pinInput = document.getElementById('staff-pin-input').value.trim();
+            if (pinInput === STAFF_PIN_REQUIRED) {
+                state.isStaff = true;
+                closeModal();
+                showToast("¡Acceso STAFF verificado correctamente!", "success");
+                updateStaffModeUI();
+                saveState();
+            } else {
+                showToast("Contraseña incorrecta. Inténtalo de nuevo.", "error");
+            }
+        }
+
+        function updateStaffModeUI() {
+            const btnText = document.getElementById('staff-btn-text');
+            const icon = document.getElementById('staff-icon');
+
+            if (state.isStaff) {
+                btnText.innerText = "STAFF (ACTIVO)";
+                icon.className = "fa-solid fa-lock-open text-gold text-[11px]";
+            } else {
+                btnText.innerText = "STAFF";
+                icon.className = "fa-solid fa-lock text-brightRed text-[11px]";
+            }
+
+            document.querySelectorAll('.staff-action-col').forEach(el => {
+                if (state.isStaff) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+            const participantButton = document.getElementById('manage-participants-button');
+            if (participantButton) participantButton.classList.toggle('hidden', !state.isStaff);
+        }
+
+        // Toast Notifications
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const bg = type === 'success' ? 'bg-[#0f2e1b] border-emerald-500 text-emerald-200' :
+                       type === 'error' ? 'bg-[#3d0a11] border-red-500 text-red-200' :
+                       'bg-[#1a080c] border-brightRed text-white';
+
+            toast.className = `p-3.5 rounded-xl border ${bg} shadow-2xl text-xs font-semibold flex items-center gap-2.5 transition-all transform pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-brightRed"></i> <span>${msg}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        // Global Modal System
+        function openModal(title, contentHtml, actionsHtml) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-content').innerHTML = contentHtml;
+            document.getElementById('modal-actions').innerHTML = actionsHtml;
+            document.getElementById('global-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('global-modal').classList.add('hidden');
+        }
+
+        // 90-Minute Timer Logic
+        function startTimer() {
+            if (state.timer.isRunning) return;
+            state.timer.isRunning = true;
+            timerInterval = setInterval(() => {
+                if (state.timer.secondsLeft > 0) {
+                    state.timer.secondsLeft--;
+                    updateTimerDisplay();
+                } else {
+                    pauseTimer();
+                    showToast("¡Tiempo reglamentario de 90 minutos finalizado!", "error");
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            state.timer.isRunning = false;
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            state.timer.secondsLeft = 5400; // 90 min
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(state.timer.secondsLeft / 60);
+            const secs = state.timer.secondsLeft % 60;
+            const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            const display = document.getElementById('timer-display');
+            if (display) display.innerText = formatted;
+        }
+
+        // View Renderers
+        function renderAllViews() {
+            renderDashboard();
+            renderEquiposView();
+            renderPartidosView();
+            renderStandingsView();
+            renderEstadisticasView();
+            updateTimerDisplay();
+            updateStaffModeUI();
+        }
+
+        function renderDashboard() {
+            const disciplineSlugs = ['fifa', 'smash', 'dance', 'karaoke'];
+            const activeTeams = state.equipos.filter(team => team.active !== false);
+            const teamCount = document.getElementById('dash-team-count');
+            const playerCount = document.getElementById('dash-player-count');
+            if (teamCount) teamCount.innerText = activeTeams.length;
+            if (playerCount) playerCount.innerText = activeTeams.reduce((count, team) => count + team.integrantes.length, 0);
+
+            [1, 2, 3, 4].forEach(dId => {
+                const dMatches = state.partidos.filter(match => match.disciplineId === dId);
+                const completed = dMatches.filter(match => match.games[0].ganadorTeamId !== null).length;
+                const slug = disciplineSlugs[dId - 1];
+                const totalMatches = document.getElementById(`total-matches-${slug}`);
+                if (totalMatches) totalMatches.innerText = dMatches.length;
+                const totalGames = dMatches.length;
+                const gameCount = document.getElementById(`total-games-${slug}`);
+                if (gameCount) gameCount.innerText = totalGames;
+                const progress = document.getElementById(`prog-${slug}`);
+                if (progress) progress.innerText = `${completed} / ${totalGames}`;
+                const status = document.getElementById(`status-${slug}`);
+                if (status) {
+                    status.innerText = TOURNAMENT_OPTIONS[dId].enabled ? 'ACTIVO' : 'DESACTIVADO';
+                    status.className = `text-[9px] font-mono ${TOURNAMENT_OPTIONS[dId].enabled ? 'text-emerald-300' : 'text-amber-300'}`;
+                }
+            });
+            const maxPoints = document.getElementById('standings-max-points');
+            if (maxPoints) maxPoints.innerText = getMaxPointsPerTeam();
+
+            // Standings calculation for leader name
+            const scores = getCalculatedStandings();
+            const leaderName = document.getElementById('dash-leader-name');
+            if (leaderName) {
+                if (scores.length > 0 && scores[0].totalPts > 0) {
+                    leaderName.innerText = `${scores[0].nombre} (${scores[0].totalPts} pts)`;
+                } else {
+                    leaderName.innerText = "Por definir";
+                }
+            }
+        }
+
+        function renderEquiposView() {
+            const container = document.getElementById('equipos-grid-container');
+            if (!container) return;
+
+            container.innerHTML = state.equipos.map(eq => `
+                <div class="bg-cardDark border ${eq.active === false ? 'border-gray-700 opacity-60' : 'border-cardBorder'} rounded-2xl p-5 space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-cardBorder pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-burgundy border border-accentRed flex items-center justify-center font-header font-bold text-white text-xs">
+                                ${eq.id}
+                            </div>
+                            <div>
+                                <h3 class="font-header font-bold text-white text-base">${escapeHtml(eq.nombre)}</h3>
+                                ${eq.active === false ? '<span class="text-[9px] font-mono text-amber-300">DADO DE BAJA</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 ${state.isStaff ? '' : 'hidden'}">
+                            <button onclick="openEditTeamModal(${eq.id})" class="staff-action-element text-gold hover:text-white p-1 text-xs" title="Editar integrantes">
+                                <i class="fa-solid fa-user-pen"></i>
+                            </button>
+                            ${eq.isStaffTeam ? `<button onclick="confirmToggleStaffTeam(${eq.id})" class="rounded-lg ${eq.active === false ? 'bg-emerald-800' : 'bg-cardBorder'} px-2 py-1 text-[9px] font-bold text-white hover:bg-accentRed">${eq.active === false ? 'Reactivar' : 'Dar de baja'}</button>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-xs text-gray-300">
+                        ${eq.integrantes.map(m => {
+                            const tournaments = DISCIPLINES
+                                .filter(d => eq.tournamentPlayerIds && eq.tournamentPlayerIds[d.id]?.includes(m.id))
+                                .map(d => ['FC', 'SM', 'JD', 'KAR'][d.id - 1]);
+                            return `
+                                <div class="flex items-center justify-between bg-pitchDark px-3 py-2 rounded-xl border border-cardBorder/60 gap-2">
+                                    <span class="font-mono text-gray-500 text-[10px] shrink-0">JUGADOR ${m.num}</span>
+                                    <span class="font-semibold text-white truncate">${escapeHtml(m.nombre)}</span>
+                                    <span class="text-[9px] text-emerald-300 font-mono shrink-0">${tournaments.join(' · ')}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function confirmToggleStaffTeam(teamId) {
+            if (!state.isStaff) return;
+            const team = state.equipos.find(entry => entry.id === teamId && entry.isStaffTeam);
+            if (!team) return;
+            const nextActive = team.active === false;
+            openModal(
+                nextActive ? "Reactivar equipo STAFF" : "Dar de baja equipo STAFF",
+                `<p class="text-xs text-gray-300">${nextActive ? 'El equipo volverá a participar' : 'El equipo se excluirá de los torneos activos'}: ${escapeHtml(team.nombre)}. Se volverán a sortear las llaves activas y se borrarán sus resultados. ¿Continuar?</p>`,
+                `
+                <button onclick="closeModal()" class="rounded-xl border border-cardBorder px-3 py-1.5 text-xs text-gray-300">Cancelar</button>
+                <button onclick="toggleStaffTeamActive(${team.id})" class="rounded-xl bg-accentRed px-4 py-1.5 text-xs font-bold text-white">Confirmar</button>
+                `
+            );
+        }
+
+        function toggleStaffTeamActive(teamId) {
+            if (!state.isStaff) return;
+            const team = state.equipos.find(entry => entry.id === teamId && entry.isStaffTeam);
+            if (!team) {
+                showToast("No se encontró el equipo STAFF.", "error");
+                return;
+            }
+            team.active = team.active === false;
+            generateRoundRobinDraw();
+            closeModal();
+            saveState();
+            showToast(`${team.nombre} ${team.active ? 'reactivado' : 'dado de baja'}; calendario actualizado.`, "success");
+        }
+
+        function openAddTeamMemberModal() {
+            if (state.equipos.length === 0) return;
+            openEditTeamModal(state.equipos[0].id);
+        }
+
+        function openEditTeamModal(teamId) {
+            const eq = state.equipos.find(t => t.id === teamId);
+            if (!eq) return;
+
+            const inputsHtml = eq.integrantes.map(m => `
+                <div class="space-y-1">
+                    <label class="text-[11px] font-mono font-bold text-gray-400">Jugador ${m.num}:</label>
+                    <input type="text" id="edit-p-${m.num}" value="${escapeHtml(m.nombre)}" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brightRed">
+                </div>
+            `).join('');
+
+            const selectorOptions = state.equipos.map(t => `
+                <option value="${t.id}" ${t.id === teamId ? 'selected' : ''}>${escapeHtml(t.nombre)}</option>
+            `).join('');
+
+            openModal(
+                "Editar Integrantes de Equipo",
+                `
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-mono font-bold text-gold uppercase">Seleccionar Equipo:</label>
+                        <select onchange="openEditTeamModal(parseInt(this.value))" class="w-full bg-pitchDark border border-cardBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brightRed">
+                            ${selectorOptions}
+                        </select>
+                    </div>
+                    <div class="space-y-2 pt-2 border-t border-cardBorder">
+                        <p class="text-[10px] text-gold">Asigna integrantes por torneo; las cantidades aparecen en los encabezados.</p>
+                        ${inputsHtml}
+                    </div>
+                </div>
+                `,
+                `
+                <button onclick="closeModal()" class="px-3.5 py-1.5 bg-cardDark border border-cardBorder text-gray-300 text-xs font-bold rounded-xl">Cancelar</button>
+                <button onclick="saveTeamMembers(${teamId})" class="px-4 py-1.5 bg-accentRed text-white text-xs font-bold rounded-xl">Guardar Cambios</button>
+                `
+            );
+        }
+
+        function saveTeamMembers(teamId) {
+            const eq = state.equipos.find(t => t.id === teamId);
+            if (!eq) return;
+
+            eq.integrantes.forEach(member => {
+                const input = document.getElementById(`edit-p-${member.num}`);
+                if (input && input.value.trim()) member.nombre = input.value.trim();
+            });
+            saveState();
+            closeModal();
+            showToast(`Integrantes del equipo ${eq.nombre} actualizados.`, "success");
+        }
+
+        // Discipline & Matchmaking Renderers
+        function switchDiscipline(discId) {
+            state.activeDiscipline = discId;
+            document.querySelectorAll('.disc-tab').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById(`disc-tab-${discId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const discObj = DISCIPLINES.find(d => d.id === discId);
+            const titleDisplay = document.getElementById('disc-title-display');
+            if (titleDisplay && discObj) titleDisplay.innerText = discObj.name;
+
+            renderPartidosView();
+        }
+
+        function renderPartidosView() {
+            const container = document.getElementById('matches-list-container');
+            if (!container) return;
+
+            const options = TOURNAMENT_OPTIONS[state.activeDiscipline];
+            container.classList.toggle('xl:grid-cols-2', false);
+            if (!options.enabled) {
+                container.innerHTML = `<div class="bg-cardDark border border-cardBorder rounded-2xl p-8 text-center text-amber-300">Este torneo está desactivado. Para activarlo, cambia <code>enabled: true</code> en <code>TOURNAMENT_OPTIONS</code> dentro del JavaScript.</div>`;
+                return;
+            }
+
+            const discMatches = state.partidos.filter(m => m.disciplineId === state.activeDiscipline);
+
+            if (discMatches.length === 0) {
+                container.innerHTML = `<div class="bg-cardDark border border-cardBorder rounded-2xl p-8 text-center text-gray-500 italic">No hay enfrentamientos programados.</div>`;
+                return;
+            }
+
+            if (options.format === 'knockout') {
+                container.innerHTML = renderKnockoutBracket(discMatches);
+                return;
+            }
+
+            const roundIndexes = [...new Set(discMatches.map(match => match.roundIndex))].sort((a, b) => a - b);
+            container.innerHTML = roundIndexes.map(roundIndex => {
+                const roundMatches = discMatches
+                    .filter(match => match.roundIndex === roundIndex)
+                    .sort((a, b) => a.slotIndex - b.slotIndex);
+                const completedMatches = roundMatches.filter(match => match.games[0].ganadorTeamId).length;
+                return `
+                    <section class="space-y-3 rounded-2xl border border-cardBorder/70 bg-black/20 p-3">
+                        <header class="flex items-center justify-between rounded-xl border border-cardBorder bg-burgundy px-4 py-3">
+                            <h3 class="font-header text-sm font-bold text-white">${escapeHtml(roundMatches[0].roundName)}</h3>
+                            <span class="font-mono text-[10px] text-gold">${completedMatches}/${roundMatches.length} duelos</span>
+                        </header>
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            ${roundMatches.map((match, index) => renderScoreMatch(match, index)).join('')}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+        }
+
+        function renderScoreMatch(match, index) {
+            const teamA = state.equipos.find(team => team.id === match.teamAId) || { nombre: 'Equipo A', integrantes: [] };
+            const teamB = state.equipos.find(team => team.id === match.teamBId) || { nombre: 'Equipo B', integrantes: [] };
+            const game = match.games[0];
+            const gamesPlayed = match.games.filter(entry => entry.ganadorTeamId !== null).length;
+            const isVoting = isVotingDiscipline(match.disciplineId);
+            const tiePending = isVoting && game.votesSubmitted && game.ganadorTeamId === null;
+            const resultScore = isVoting && game.votesSubmitted
+                ? `${game.scoreA} - ${game.scoreB}`
+                : `${game.ganadorTeamId === match.teamAId ? '1' : '0'} - ${game.ganadorTeamId === match.teamBId ? '1' : '0'}`;
+            const matchStatus = gamesPlayed === match.games.length
+                ? 'COMPLETADO'
+                : tiePending ? 'DESEMPATE STAFF' : 'PENDIENTE';
+
+            return `
+                <details data-match-id="${match.id}" ontoggle="setExpandedMatch('${match.id}', this.open)" class="match-accordion group bg-cardDark border border-cardBorder rounded-2xl shadow-xl overflow-hidden">
+                    <summary class="list-none cursor-pointer p-4 hover:bg-cardHover/70 transition">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="font-mono text-[10px] text-gold font-bold shrink-0">DUELO ${String(index + 1).padStart(2, '0')}</span>
+                            <div class="flex items-center gap-2 min-w-0 flex-1 justify-center">
+                                <div class="min-w-0 text-right">
+                                    <span class="block font-header font-bold text-white text-sm truncate">${escapeHtml(teamA.nombre)}</span>
+                                    <span class="block text-[9px] text-gray-500 truncate">${escapeHtml(getMatchPlayerNames(teamA, game.playerAIds))}</span>
+                                </div>
+                                <span class="font-header font-black text-lg text-brightRed bg-pitchDark px-2 py-0.5 rounded-lg border border-cardBorder shrink-0">${resultScore}</span>
+                                <div class="min-w-0">
+                                    <span class="block font-header font-bold text-white text-sm truncate">${escapeHtml(teamB.nombre)}</span>
+                                    <span class="block text-[9px] text-gray-500 truncate">${escapeHtml(getMatchPlayerNames(teamB, game.playerBIds))}</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-down text-gray-500 text-xs transition-transform group-open:rotate-180"></i>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-[10px] font-mono text-gray-500">
+                            <span>${isVoting
+                                ? `${game.playerAIds.length} CALIFICACIONES POR EQUIPO`
+                                : `${game.playerAIds.length} VS ${game.playerBIds.length}`}
+                                · ${gamesPlayed}/${match.games.length} REGISTRADAS</span>
+                            <span class="${gamesPlayed === match.games.length ? 'text-emerald-400' : 'text-amber-400'}">${matchStatus}</span>
+                        </div>
+                    </summary>
+                    <div class="grid grid-cols-1 gap-2 p-3 pt-0">
+                        ${match.games.map(entry => renderTournamentMatchCard(match, entry, teamA, teamB)).join('')}
+                    </div>
+                </details>
+            `;
+        }
+
+        function renderKnockoutBracket(matches) {
+            const bracketIndexes = [...new Set(matches.map(match => match.bracketIndex ?? 0))]
+                .sort((a, b) => a - b);
+            if (bracketIndexes.length > 1) {
+                return `
+                    <div class="space-y-3">
+                        ${bracketIndexes.map((bracketIndex, index) => {
+                            const bracketMatches = matches.filter(match => (match.bracketIndex ?? 0) === bracketIndex);
+                            const completed = bracketMatches.filter(match => match.games[0].ganadorTeamId).length;
+                            return `
+                                <details class="overflow-hidden rounded-2xl border border-cardBorder bg-cardDark shadow-xl" ${index === 0 ? 'open' : ''}>
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 bg-burgundy px-4 py-3">
+                                        <span class="font-header text-sm font-bold text-white">Bracket ${bracketIndex + 1}</span>
+                                        <span class="font-mono text-[10px] text-gold">${completed}/${bracketMatches.length} duelos resueltos</span>
+                                    </summary>
+                                    <div class="p-3">${renderKnockoutBracketRounds(bracketMatches)}</div>
+                                </details>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            return renderKnockoutBracketRounds(matches);
+        }
+
+        function renderKnockoutBracketRounds(matches) {
+            const rounds = [...new Set(matches.map(match => match.roundIndex))]
+                .sort((a, b) => a - b);
+            return `
+                <div class="bracket-scroll overflow-x-auto rounded-2xl border border-cardBorder/70 bg-black/20 p-3">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <p class="font-header text-xs font-bold uppercase tracking-wider text-gold">Llaves de eliminación</p>
+                        <p class="text-[10px] text-gray-500">Las rondas avanzan de izquierda a derecha. Desliza horizontalmente en pantallas pequeñas.</p>
+                    </div>
+                    <div class="grid items-start gap-3 pb-2" style="grid-template-columns: repeat(${rounds.length}, minmax(180px, 1fr)); min-width: max(100%, ${rounds.length * 180}px);">
+                        ${rounds.map(roundIndex => {
+                            const roundMatches = matches
+                                .filter(match => match.roundIndex === roundIndex)
+                                .sort((a, b) => a.slotIndex - b.slotIndex);
+                            const completedMatches = roundMatches.filter(match => match.games[0].ganadorTeamId).length;
+                            return `
+                                <section class="min-w-0 space-y-2.5">
+                                    <header class="rounded-xl border border-cardBorder bg-burgundy px-3 py-2 shadow-lg">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <h3 class="font-header text-sm font-bold text-white">${escapeHtml(roundMatches[0].roundName)}</h3>
+                                            <span class="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[9px] text-gold">${completedMatches}/${roundMatches.length}</span>
+                                        </div>
+                                        <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-black/40">
+                                            <div class="h-full rounded-full bg-emerald-400" style="width: ${roundMatches.length ? completedMatches / roundMatches.length * 100 : 0}%"></div>
+                                        </div>
+                                    </header>
+                                    ${roundMatches.map(match => renderKnockoutMatch(match)).join('')}
+                                </section>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderKnockoutMatch(match) {
+            const teamA = state.equipos.find(team => team.id === match.teamAId);
+            const teamB = state.equipos.find(team => team.id === match.teamBId);
+            const game = match.games[0];
+            const winner = state.equipos.find(team => team.id === game.ganadorTeamId);
+            const hasBothTeams = Boolean(teamA && teamB);
+            const isCompleted = Boolean(game.ganadorTeamId);
+            const teamRow = (team, playerIds) => `
+                <div class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 ${team && team.id === game.ganadorTeamId ? 'bg-burgundy text-white font-bold' : 'bg-pitchDark text-gray-300'}">
+                    <div class="min-w-0">
+                        <span class="block truncate text-xs">${team ? escapeHtml(team.nombre) : 'Por definir'}</span>
+                        ${team ? `<span class="block truncate text-[9px] text-gray-500">${escapeHtml(getMatchPlayerNames(team, playerIds))}</span>` : ''}
+                    </div>
+                    ${team && team.id === game.ganadorTeamId ? '<i class="fa-solid fa-trophy text-gold"></i>' : ''}
+                </div>
+            `;
+            return `
+                <article class="space-y-2 rounded-xl border ${isCompleted ? 'border-emerald-900' : 'border-cardBorder'} bg-cardDark p-3">
+                    <div class="flex items-center justify-between text-[9px] font-mono text-gray-500">
+                        <span>BRACKET ${(match.bracketIndex || 0) + 1} · LLAVE ${String(match.slotIndex + 1).padStart(2, '0')}</span>
+                        <span>${match.isBye ? 'PASE AUTOMÁTICO · +1 PUNTO' : isCompleted ? 'FINALIZADO' : 'PENDIENTE'}</span>
+                    </div>
+                    ${isVotingDiscipline(match.disciplineId) && hasBothTeams
+                        ? renderTournamentMatchCard(match, game, teamA, teamB)
+                        : `${teamRow(teamA, game.playerAIds)}
+                            <div class="text-center text-[9px] font-mono text-brightRed">VS</div>
+                            ${teamRow(teamB, game.playerBIds)}`}
+                    ${isCompleted && match.roundName === 'Final'
+                        ? `<p class="text-center text-[10px] font-bold text-gold">${escapeHtml(winner ? winner.nombre : 'Campeón')}: +${TOURNAMENT_SCORING.championBonus} puntos de campeón</p>`
+                        : ''}
+                    ${state.isStaff && hasBothTeams && !isCompleted && !isVotingDiscipline(match.disciplineId) ? `
+                        <div class="flex gap-2 border-t border-cardBorder/50 pt-2">
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamA.id})" class="flex-1 rounded-lg bg-cardBorder px-2 py-1.5 text-[10px] font-bold text-white hover:bg-brightRed">Gana ${escapeHtml(teamA.nombre)}</button>
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamB.id})" class="flex-1 rounded-lg bg-cardBorder px-2 py-1.5 text-[10px] font-bold text-white hover:bg-brightRed">Gana ${escapeHtml(teamB.nombre)}</button>
+                        </div>
+                    ` : ''}
+                </article>
+            `;
+        }
+
+        function setExpandedMatch(matchId, isExpanded) {
+            if (isExpanded) {
+                document.querySelectorAll('.match-accordion').forEach(match => {
+                    if (match.dataset.matchId !== matchId) match.open = false;
+                });
+                state.expandedMatchId = matchId;
+            }
+            else if (state.expandedMatchId === matchId) state.expandedMatchId = null;
+        }
+
+        function getMatchPlayerNames(team, playerIds) {
+            return (playerIds || [])
+                .map(id => team.integrantes.find(player => player.id === id))
+                .filter(Boolean)
+                .map(player => player.nombre)
+                .join(' + ');
+        }
+
+        function renderTournamentMatchCard(match, game, teamA, teamB) {
+            const isVoting = isVotingDiscipline(match.disciplineId);
+            const isDone = game.ganadorTeamId !== null;
+            const tiePending = isVoting && game.votesSubmitted && !isDone;
+            const playersA = (game.playerAIds || []).map(id => teamA.integrantes.find(player => player.id === id)).filter(Boolean);
+            const playersB = (game.playerBIds || []).map(id => teamB.integrantes.find(player => player.id === id)).filter(Boolean);
+
+            if (isVoting) {
+                const scoreRows = (players, votes, side) => players.map((player, index) => `
+                    <label class="flex items-center justify-between gap-2 text-xs text-gray-300">
+                        <span class="truncate">${escapeHtml(player.nombre)}</span>
+                        ${state.isStaff
+                            ? `<input id="vote-${match.id}-${side}-${index}" type="number" min="1" max="10" step="1" value="${votes && votes[index] !== undefined ? votes[index] : ''}" aria-label="Calificación de ${escapeHtml(player.nombre)}" class="w-16 bg-cardDark border border-cardBorder rounded-lg px-2 py-1 text-center text-white">`
+                            : `<span class="font-mono font-bold text-gold">${votes && votes[index] !== undefined ? votes[index] : '—'}</span>`}
+                    </label>
+                `).join('');
+                const voteSummary = game.votesSubmitted
+                    ? `<p class="text-center text-[11px] font-mono text-gold">${escapeHtml(teamA.nombre)}: ${game.scoreA} pts · ${escapeHtml(teamB.nombre)}: ${game.scoreB} pts</p>`
+                    : `<p class="text-center text-[11px] text-gray-500">Votación pendiente de STAFF.</p>`;
+                const tieControls = tiePending && state.isStaff ? `
+                    <div class="space-y-1.5 border-t border-cardBorder/40 pt-2">
+                        <p class="text-center text-[10px] font-bold text-amber-300">Empate: STAFF debe elegir al ganador.</p>
+                        <div class="flex gap-2">
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamA.id})" class="flex-1 px-2 py-1.5 bg-cardBorder hover:bg-brightRed text-white text-[10px] font-bold rounded-lg">Gana ${escapeHtml(teamA.nombre)}</button>
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamB.id})" class="flex-1 px-2 py-1.5 bg-cardBorder hover:bg-brightRed text-white text-[10px] font-bold rounded-lg">Gana ${escapeHtml(teamB.nombre)}</button>
+                        </div>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="bg-pitchDark border ${isDone ? 'border-emerald-900/70' : 'border-cardBorder/80'} rounded-xl p-3 space-y-3">
+                        <div class="text-center text-[10px] font-mono text-gray-400">${DISCIPLINES[match.disciplineId - 1].name} · ${playersA.length} CALIFICACIONES POR JUGADOR (1–10)</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="space-y-2 rounded-lg border border-cardBorder/60 p-2">
+                                <h4 class="text-xs font-bold text-white">${escapeHtml(teamA.nombre)}</h4>
+                                ${scoreRows(playersA, game.votesA, 'a')}
+                            </div>
+                            <div class="space-y-2 rounded-lg border border-cardBorder/60 p-2">
+                                <h4 class="text-xs font-bold text-white">${escapeHtml(teamB.nombre)}</h4>
+                                ${scoreRows(playersB, game.votesB, 'b')}
+                            </div>
+                        </div>
+                        ${voteSummary}
+                        ${state.isStaff ? `<button onclick="saveMatchVotes('${match.id}')" class="w-full px-3 py-1.5 bg-burgundy hover:bg-accentRed text-white text-[10px] font-bold rounded-lg">Guardar calificaciones</button>` : ''}
+                        ${tieControls}
+                    </div>
+                `;
+            }
+
+            const playerList = (players, isWinner) => players.map(player => `
+                <div class="flex items-center gap-1.5 text-xs ${isWinner ? 'text-white font-semibold' : 'text-gray-300'}">
+                    <i class="fa-solid fa-user text-[9px] text-gray-500"></i>
+                    <span class="truncate">${escapeHtml(player.nombre)}</span>
+                </div>
+            `).join('');
+
+            return `
+                <div class="bg-pitchDark border ${isDone ? 'border-emerald-900/70' : 'border-cardBorder/80'} rounded-xl p-3 space-y-3">
+                    <div class="text-center text-[10px] font-mono text-gray-400">DUELO ${playersA.length} VS ${playersB.length} · STAFF REGISTRA AL GANADOR</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1 rounded-lg border border-cardBorder/60 p-2">
+                            <h4 class="text-xs font-bold text-white">${escapeHtml(teamA.nombre)}</h4>
+                            ${playerList(playersA, game.ganadorTeamId === teamA.id)}
+                        </div>
+                        <div class="space-y-1 rounded-lg border border-cardBorder/60 p-2">
+                            <h4 class="text-xs font-bold text-white">${escapeHtml(teamB.nombre)}</h4>
+                            ${playerList(playersB, game.ganadorTeamId === teamB.id)}
+                        </div>
+                    </div>
+                    ${state.isStaff ? `
+                        <div class="flex gap-2 border-t border-cardBorder/40 pt-2">
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamA.id})" class="flex-1 px-2 py-1.5 bg-cardBorder hover:bg-brightRed text-white text-[10px] font-bold rounded-lg">Gana ${escapeHtml(teamA.nombre)}</button>
+                            <button onclick="setGameWinner('${match.id}', '${game.id}', ${teamB.id})" class="flex-1 px-2 py-1.5 bg-cardBorder hover:bg-brightRed text-white text-[10px] font-bold rounded-lg">Gana ${escapeHtml(teamB.nombre)}</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function saveMatchVotes(matchId) {
+            if (!state.isStaff) return;
+            const match = state.partidos.find(entry => entry.id === matchId);
+            const game = match && match.games[0];
+            if (!match || !game || !isVotingDiscipline(match.disciplineId)) {
+                showToast("No se encontró la votación para guardar.", "error");
+                return;
+            }
+
+            const votes = ['a', 'b'].map((side, sideIndex) => {
+                const playerIds = sideIndex === 0 ? game.playerAIds : game.playerBIds;
+                return playerIds.map((_, index) => {
+                    const input = document.getElementById(`vote-${match.id}-${side}-${index}`);
+                    return input && input.value.trim() !== '' ? Number(input.value) : NaN;
+                });
+            });
+            const expectedVotes = game.playerAIds.length;
+            if (!expectedVotes || game.playerBIds.length !== expectedVotes ||
+                votes.some(teamVotes => teamVotes.length !== expectedVotes ||
+                teamVotes.some(value => !Number.isInteger(value) || value < 1 || value > 10))) {
+                showToast(`Ingresa una calificación entera del 1 al 10 para cada participante (${expectedVotes || '—'} por equipo).`, "error");
+                return;
+            }
+
+            game.votesA = votes[0];
+            game.votesB = votes[1];
+            const scoreTeam = scores => {
+                const total = scores.reduce((sum, score) => sum + score, 0);
+                return TOURNAMENT_SCORING.scoreMode === 'sum' ? total : total / scores.length;
+            };
+            game.scoreA = scoreTeam(votes[0]);
+            game.scoreB = scoreTeam(votes[1]);
+            game.votesSubmitted = true;
+            game.ganadorTeamId = Math.abs(game.scoreA - game.scoreB) < 0.000001
+                ? null
+                : game.scoreA > game.scoreB ? match.teamAId : match.teamBId;
+            if (TOURNAMENT_OPTIONS[match.disciplineId].format === 'knockout') {
+                advanceBracketWinner(match);
+            }
+            saveState();
+            showToast(game.ganadorTeamId === null
+                ? "Las calificaciones quedaron empatadas; STAFF debe elegir al ganador."
+                : "Calificaciones guardadas y ganador actualizado.", "success");
+        }
+
+        function setGameWinner(matchId, gameId, winnerTeamId) {
+            if (!state.isStaff) return;
+            const match = state.partidos.find(m => m.id === matchId);
+            if (!match) return;
+
+            const game = match.games.find(g => g.id === gameId);
+            if (!game) return;
+            if (winnerTeamId !== match.teamAId && winnerTeamId !== match.teamBId) {
+                showToast("El equipo ganador no pertenece a este enfrentamiento.", "error");
+                return;
+            }
+            if (match.isBye || !match.teamAId || !match.teamBId) return;
+            if (isVotingDiscipline(match.disciplineId) &&
+                (!game.votesSubmitted || Math.abs(game.scoreA - game.scoreB) >= 0.000001)) {
+                showToast("El desempate solo está disponible después de guardar calificaciones empatadas.", "error");
+                return;
+            }
+
+            game.ganadorTeamId = winnerTeamId;
+            if (TOURNAMENT_OPTIONS[match.disciplineId].format === 'knockout') {
+                advanceBracketWinner(match);
+            }
+            saveState();
+            showToast("Ganador del enfrentamiento guardado correctamente.", "success");
+        }
+
+        // Standings Engine
+        function getCalculatedStandings() {
+            const standingsMap = {};
+
+            state.equipos.filter(eq => eq.active !== false).forEach(eq => {
+                standingsMap[eq.id] = {
+                    id: eq.id,
+                    nombre: eq.nombre,
+                    ptsDisc: { 1: 0, 2: 0, 3: 0, 4: 0 },
+                    pj: 0,
+                    pg: 0,
+                    pp: 0,
+                    totalPts: 0
+                };
+            });
+
+            state.partidos.forEach(m => {
+                const discId = m.disciplineId;
+                m.games.forEach(g => {
+                    if (g.ganadorTeamId !== null) {
+                        if (!m.isBye) {
+                            if (standingsMap[m.teamAId]) standingsMap[m.teamAId].pj++;
+                            if (standingsMap[m.teamBId]) standingsMap[m.teamBId].pj++;
+                        }
+
+                        if (standingsMap[g.ganadorTeamId]) {
+                            const points = TOURNAMENT_OPTIONS[discId].format === 'knockout'
+                                ? TOURNAMENT_SCORING.roundWinPoints
+                                : 1;
+                            standingsMap[g.ganadorTeamId].ptsDisc[discId] += points;
+                            standingsMap[g.ganadorTeamId].totalPts += points;
+                            standingsMap[g.ganadorTeamId].pg++;
+                            if (TOURNAMENT_OPTIONS[discId].format === 'knockout' && m.roundName === 'Final') {
+                                standingsMap[g.ganadorTeamId].ptsDisc[discId] += TOURNAMENT_SCORING.championBonus;
+                                standingsMap[g.ganadorTeamId].totalPts += TOURNAMENT_SCORING.championBonus;
+                            }
+                        }
+
+                        if (!m.isBye && m.teamAId && m.teamBId) {
+                            const loserId = g.ganadorTeamId === m.teamAId ? m.teamBId : m.teamAId;
+                            if (standingsMap[loserId]) standingsMap[loserId].pp++;
+                        }
+                    }
+                });
+            });
+
+            const standingsArr = Object.values(standingsMap);
+            standingsArr.sort((a, b) => b.totalPts - a.totalPts || b.pg - a.pg);
+            return standingsArr;
+        }
+
+        function renderStandingsView() {
+            const tbody = document.getElementById('standings-tbody');
+            if (!tbody) return;
+
+            const standings = getCalculatedStandings();
+
+            if (standings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-gray-500 italic">No hay información de clasificación.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = standings.map((r, idx) => {
+                const rankClass = idx === 0 ? 'rank-gold' : idx === 1 ? 'rank-silver' : idx === 2 ? 'rank-bronze' : '';
+                const badgeIcon = idx === 0 ? '<i class="fa-solid fa-crown text-gold ml-1"></i>' : '';
+
+                return `
+                    <tr class="hover:bg-cardHover/80 transition-colors ${rankClass}">
+                        <td class="px-4 py-3 font-header font-black text-white text-base">#${idx + 1}</td>
+                        <td class="px-4 py-3 font-bold text-white">${escapeHtml(r.nombre)} ${badgeIcon}</td>
+                        <td class="px-4 py-3 text-center font-mono">${r.ptsDisc[1]} pts</td>
+                        <td class="px-4 py-3 text-center font-mono">${r.ptsDisc[2]} pts</td>
+                        <td class="px-4 py-3 text-center font-mono">${r.ptsDisc[3]} pts</td>
+                        <td class="px-4 py-3 text-center font-mono">${r.ptsDisc[4]} pts</td>
+                        <td class="px-4 py-3 text-center font-mono">${r.pj}</td>
+                        <td class="px-4 py-3 text-center font-mono text-emerald-400 font-semibold">${r.pg}</td>
+                        <td class="px-4 py-3 text-center font-mono text-rose-400">${r.pp}</td>
+                        <td class="px-4 py-3 text-center font-header font-black text-brightRed text-lg">${r.totalPts} / ${getMaxPointsPerTeam()}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Tournament Statistics Renderer
+        function renderEstadisticasView() {
+            const standings = getCalculatedStandings();
+
+            // Leader Card
+            const leaderName = document.getElementById('stat-leader-team');
+            const leaderPts = document.getElementById('stat-leader-pts');
+            if (leaderName && leaderPts) {
+                if (standings.length > 0 && standings[0].totalPts > 0) {
+                    leaderName.innerText = standings[0].nombre;
+                    leaderPts.innerText = `${standings[0].totalPts} Puntos acumulados`;
+                } else {
+                    leaderName.innerText = "Por definir";
+                    leaderPts.innerText = "0 Puntos acumulados";
+                }
+            }
+
+            // Total Games Played
+            let totalPlayed = 0;
+            state.partidos.forEach(m => m.games.forEach(g => { if (g.ganadorTeamId !== null) totalPlayed++; }));
+            const playedGames = document.getElementById('stat-played-games');
+            const playedPct = document.getElementById('stat-played-pct');
+            if (playedGames && playedPct) {
+                const totalGames = state.partidos.reduce((total, match) => total + match.games.length, 0);
+                playedGames.innerText = `${totalPlayed} / ${totalGames}`;
+                const pct = (totalGames > 0 ? (totalPlayed / totalGames) * 100 : 0).toFixed(1);
+                playedPct.innerText = `${pct}% completado`;
+            }
+
+            // Total Points Awarded
+            const totalPts = document.getElementById('stat-total-pts-awarded');
+            if (totalPts) totalPts.innerText = standings.reduce((total, team) => total + team.totalPts, 0);
+
+            // Average Points
+            const avgPts = document.getElementById('stat-avg-pts');
+            if (avgPts) {
+                const activeTeamCount = state.equipos.filter(team => team.active !== false).length;
+                const totalAwarded = standings.reduce((total, team) => total + team.totalPts, 0);
+                const avg = activeTeamCount > 0 ? (totalAwarded / activeTeamCount).toFixed(1) : "0.0";
+                avgPts.innerText = avg;
+            }
+
+            // Leaders Per Discipline Cards Grid
+            const leadersGrid = document.getElementById('discipline-leaders-grid');
+            if (leadersGrid) {
+                leadersGrid.innerHTML = DISCIPLINES.map(d => {
+                    // Find top team in discipline
+                    let topTeam = null;
+                    let maxPts = -1;
+
+                    standings.forEach(s => {
+                        if (s.ptsDisc[d.id] > maxPts && s.ptsDisc[d.id] > 0) {
+                            maxPts = s.ptsDisc[d.id];
+                            topTeam = s;
+                        }
+                    });
+
+                    return `
+                        <div class="bg-pitchDark border border-cardBorder rounded-xl p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-mono text-gray-400">
+                                <span>${d.name}</span>
+                                <i class="fa-solid ${d.icon} ${d.color}"></i>
+                            </div>
+                            <div class="font-header font-bold text-white text-base">
+                                ${topTeam ? escapeHtml(topTeam.nombre) : 'Por definir'}
+                            </div>
+                            <div class="text-xs font-mono text-gold font-semibold">
+                                ${topTeam ? maxPts + ' Puntos' : '0 Puntos'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+    </script>
+</body>
+</html>
